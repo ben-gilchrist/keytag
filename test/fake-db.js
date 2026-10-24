@@ -6,7 +6,7 @@ const RELATIONS = {
   conversations: { owners: { table: 'owners', local: 'owner_id', foreign: 'id', many: false },
                    messages: { table: 'messages', local: 'id', foreign: 'conversation_id', many: true } }
 };
-const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email', rate_limits: 'id' };
+const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email', rate_limits: 'id', verifications: 'id' };
 
 function parseSelect(s) {
   const fields = [], rels = [];
@@ -17,7 +17,7 @@ function parseSelect(s) {
 }
 
 export function fakeDb(seed = {}) {
-  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], rate_limits: [], ...structuredClone(seed) };
+  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], rate_limits: [], verifications: [], ...structuredClone(seed) };
   let seq = 1;
   const users = {};
 
@@ -61,7 +61,8 @@ export function fakeDb(seed = {}) {
       if (op === 'insert' || op === 'upsert') {
         const list = (Array.isArray(payload) ? payload : [payload]).map(p => {
           const row = { ...p };
-          if (PK[table] === 'id' && row.id === undefined) row.id = table === 'conversations' ? `c${seq++}` : seq++;
+          if (PK[table] === 'id' && row.id === undefined) row.id = table === 'conversations' ? `c${seq++}` : table === 'verifications' ? globalThis.crypto.randomUUID() : seq++;
+          if (table === 'verifications' && row.attempts === undefined) row.attempts = 0;
           const stamps = table === 'scans' ? ['scanned_at'] : table === 'conversations' ? ['created_at', 'last_activity_at'] : table === 'rate_limits' ? ['at'] : ['created_at'];
           for (const c of stamps) if (row[c] === undefined) row[c] = now();
           return row;

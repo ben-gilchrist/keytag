@@ -157,6 +157,27 @@ const views = {
       <button class="btn" type="submit">Save</button>
     </form>`; },
 
+  verify(){ const v = state.verify || {}; return `
+    ${head('violet',[`Tag ${esc(fmtCode(v.code||''))}`], v.phoneSent ? 'Check your email and phone' : 'Check your email',
+      `We’ve sent a 6-digit code to ${esc(v.email||'your email')}${v.phoneSent ? ` and texted one to ${esc(v.phone)}` : ''}.`)}
+    <form id="verifyForm" class="card">
+      <label for="vEmail">Code from your email<input id="vEmail" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>
+      ${v.phoneSent ? '<label for="vPhone">Code from your text<input id="vPhone" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>' : ''}
+      <p id="verifyErr" class="err" hidden></p>
+      <button class="btn" type="submit">Confirm</button>
+      <p class="muted small">Codes expire after 15 minutes. Not arrived? Check spam, or <button class="link" type="button" id="resendCodes">send new codes</button>.</p>
+      <p id="resentCodes" class="ok" hidden>New codes sent</p>
+    </form>`; },
+
+  phoneCode(){ const v = state.verify || {}; return `
+    ${head('violet',[],'Confirm your new number',`We’ve texted a 6-digit code to ${esc(v.phone||'your new number')}.`)}
+    <form id="phoneCodeForm" class="card">
+      <label for="pcCode">Code from your text<input id="pcCode" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>
+      <p id="pcErr" class="err" hidden></p>
+      <button class="btn" type="submit">Confirm</button>
+      <button class="btn ghost" type="button" data-go="account">Cancel</button>
+    </form>`; },
+
   registered(r){ return `
     ${head('lime',[`Tag ${esc(fmtCode(r.code))}`], r.existing ? 'Added to your account' : 'Your Keytag is registered',
       r.existing ? `This email already had a Keytag account, so we’ve added the tag to it and kept your number, ${esc(r.phone)}.`
@@ -483,8 +504,25 @@ function bind(){
     const code = e.target.dataset.code, email = $('rEmail').value.trim(), phone = $('rPhone').value.trim(), label = $('rLabel').value.trim();
     if (!looksLikeMobile(phone)) return showErr('regErr','Enter a mobile number we can text, like 07700 900123.');
     await busy(e.submitter, 'Saving…', async ()=>{
-      try { const r = await api('/api/register', { method:'POST', body:{ code, email, phone, label } }); go('registered', r); }
+      try { const r = await api('/api/register', { method:'POST', body:{ code, email, phone, label } });
+            state.verify = { ...r, code, label }; go('verify'); }
       catch(err){ if (err.status === 409) return go('taken', code); showErr('regErr', err.message); } }); });
+
+  $('verifyForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const v = state.verify;
+    await busy(e.submitter, 'Checking…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ id:v.id, emailCode:$('vEmail').value, phoneCode:$('vPhone')?.value } }); state.verify = null; go('registered', r); }
+      catch(err){ if (err.status === 409) return go('taken', v.code); showErr('verifyErr', err.message); } }); });
+
+  $('resendCodes')?.addEventListener('click', async e=>{ const v = state.verify;
+    await busy(e.currentTarget, 'Sending…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ code:v.code, email:v.email, phone:v.phone, label:v.label } });
+            state.verify = { ...v, ...r }; $('resentCodes').hidden = false; showErr('verifyErr',''); }
+      catch(err){ showErr('verifyErr', err.message); } }); });
+
+  $('phoneCodeForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    await busy(e.submitter, 'Checking…', async ()=>{
+      try { await api('/api/me', { method:'PATCH', body:{ id:state.verify.id, phoneCode:$('pcCode').value } }); state.verify = null; state.flash = 'Number confirmed and saved.'; go('dashboard'); }
+      catch(err){ showErr('pcErr', err.message); } }); });
 
   $('takenForm')?.addEventListener('submit', async e=>{ e.preventDefault();
     const email = $('tEmail').value.trim();
@@ -544,7 +582,9 @@ function bind(){
     const phone = $('dPhone').value.trim();
     if (!looksLikeMobile(phone)) return showErr('detailsErr','Enter a mobile number we can text, like 07700 900123.');
     await busy(e.submitter, 'Saving…', async ()=>{
-      try { const r = await api('/api/me', { method:'PATCH', body:{ name:$('dName').value, phone } }); $('dPhone').value = r.owner.phone; $('savedMsg').hidden=false; showErr('detailsErr',''); }
+      try { const r = await api('/api/me', { method:'PATCH', body:{ name:$('dName').value, phone } });
+            if (r.needCode) { state.verify = { id:r.id, phone:r.phone }; return go('phoneCode'); }
+            $('dPhone').value = r.owner.phone; $('savedMsg').hidden=false; showErr('detailsErr',''); }
       catch(err){ showErr('detailsErr', err.message); } }); });
   $('giftForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const code = e.target.dataset.code, name=$('gName').value.trim();
     await busy(e.submitter, 'Sending…', async ()=>{

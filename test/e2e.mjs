@@ -97,6 +97,14 @@ await p.fill('#rCode', 'bbb-222'); await p.click('#regCode button[type=submit]')
 await p.waitForSelector('#regForm');
 await p.fill('#rEmail', 'ana@example.com'); await p.fill('#rPhone', '07700 900222'); await p.fill('#rLabel', 'House');
 await p.click('#regForm button[type=submit]');
+await p.waitForSelector('#verifyForm');
+check(D.tables.tags.find(t => t.code === 'BBB222').owner_id == null, 'nothing registered until the codes are entered');
+const emailCode = [...emails].reverse().find(m => m.to === 'ana@example.com' && /Keytag code/.test(m.subject)).subject.slice(0, 6);
+const textCode = [...texts].reverse().find(m => m.to === '+447700900222' && /Keytag code is/.test(m.body)).body.match(/\d{6}/)[0];
+await p.fill('#vEmail', '000000'); await p.fill('#vPhone', textCode); await p.click('#verifyForm button[type=submit]');
+await p.waitForSelector('#verifyErr:not([hidden])');
+check((await p.textContent('#verifyErr')).includes('email code'), 'wrong email code is caught');
+await p.fill('#vEmail', emailCode); await p.click('#verifyForm button[type=submit]');
 await p.waitForSelector('text=Your Keytag is registered');
 const anaTag = D.tables.tags.find(t => t.code === 'BBB222');
 const ana = D.tables.owners.find(o => o.email === 'ana@example.com');
@@ -138,8 +146,11 @@ check(D.tables.tags.find(t => t.code === 'CCC333').owner_id === ana.id, 'second 
 
 // 6. Update number
 await p.fill('#dPhone', '07700 900333'); await p.click('#detailsForm button[type=submit]');
-await p.waitForSelector('#savedMsg:not([hidden])');
-check(D.tables.owners.find(o => o.email === 'ana@example.com').phone === '+447700900333', 'phone number updated');
+await p.waitForSelector('#phoneCodeForm');
+await p.fill('#pcCode', [...texts].reverse().find(m => m.to === '+447700900333').body.match(/\d{6}/)[0]);
+await p.click('#phoneCodeForm button[type=submit]');
+await p.waitForSelector('text=Number confirmed and saved.');
+check(D.tables.owners.find(o => o.email === 'ana@example.com').phone === '+447700900333', 'new phone number confirmed with a texted code');
 
 // 7. Log out, log back in with the existing account
 await p.click('#logout'); await p.waitForSelector('.hero-copy');

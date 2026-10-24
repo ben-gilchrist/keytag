@@ -47,6 +47,17 @@ beforeEach(() => {
   });
 });
 
+
+// Registration is two steps: start (codes sent) then verify (codes entered).
+const lastCode = (to) => { const e = [...emails].reverse().find(m => m.to === to && /Keytag code/.test(m.subject)); return e && e.subject.slice(0, 6); };
+const lastTextCode = (to) => { const t = [...texts].reverse().find(m => m.to === to && /Keytag code is/.test(m.body)); return t && t.body.match(/\d{6}/)[0]; };
+async function registerFull(body, headers = {}) {
+  const s1 = await call(register, { method: 'POST', body, headers });
+  if (s1.status !== 200) return s1;
+  const email = String(body.email).trim().toLowerCase();
+  return call(register, { method: 'POST', headers, body: { id: s1.body.id, emailCode: lastCode(email), phoneCode: s1.body.phoneSent ? lastTextCode(s1.body.phone) : undefined } });
+}
+
 async function call(h, opts) { const res = mockRes(); await h(mockReq(opts), res); return { status: res.statusCode, body: res.headers['content-type']?.includes('json') ? res.json() : res.body }; }
 const as = who => ({ authorization: `Bearer ${who}` });
 const sms = (from, Body) => call(inbound, { method: 'POST', headers: { 'x-twilio-signature': 'ok' }, body: { From: from, Body } });
@@ -133,13 +144,13 @@ test('text relay: rejects requests not signed by Twilio, ignores STOP', async ()
 });
 
 test('register: code + email + mobile, no PIN', async () => {
-  const ok = await call(register, { method: 'POST', body: { code: 'bbb-222', email: 'Ana@Example.com', phone: '07700 900222', label: 'House' } });
+  const ok = await registerFull({ code: 'bbb-222', email: 'Ana@Example.com', phone: '07700 900222', label: 'House' });
   assert.deepEqual([ok.status, ok.body.ok, ok.body.existing], [200, true, false]);
   const t = D.tables.tags.find(x => x.code === 'BBB222');
   assert.equal(t.label, 'House');
   const owner = D.tables.owners.find(o => o.id === t.owner_id);
   assert.deepEqual([owner.email, owner.phone], ['ana@example.com', '+447700900222']);
-  const mail = emails.find(e => e.to === 'ana@example.com');
+  const mail = emails.find(e => e.to === 'ana@example.com' && !/code/.test(e.subject));
   assert.equal(mail.subject, 'Your Keytag is registered');
   assert.ok(mail.text.includes('https://fake/magic'), 'email has a manage link');
 });
@@ -156,9 +167,9 @@ test('register: code not found, already registered, bad details', async () => {
 });
 
 test('register: one email, many tags (one account, existing number kept)', async () => {
-  const a = await call(register, { method: 'POST', body: { code: 'BBB222', email: 'sam@example.com', phone: '07700 900444', label: 'Car' } });
+  const a = await registerFull({ code: 'BBB222', email: 'sam@example.com', phone: '07700 900444', label: 'Car' });
   assert.deepEqual([a.status, a.body.existing, a.body.phone], [200, true, '+447700900123']);
-  const b = await call(register, { method: 'POST', body: { code: 'CCC333', email: 'SAM@example.com', phone: '07700 900555', label: 'Bike' } });
+  const b = await registerFull({ code: 'CCC333', email: 'SAM@example.com', phone: '07700 900555', label: 'Bike' });
   assert.equal(b.body.existing, true);
   assert.equal(D.tables.owners.length, 1);
   assert.equal(D.tables.owners[0].phone, '+447700900123', 'a stranger can’t change the number');
@@ -167,6 +178,46 @@ test('register: one email, many tags (one account, existing number kept)', async
   // finder message names the keys
   await call(message, { method: 'POST', body: { code: 'BBB222', body: 'At the gym' } });
   assert.ok(texts.at(-1).body.includes('found your Car keys'));
+});
+
+test('register: codes are checked, single use, limited tries; existing customers skip the text code', async () => {
+  // new customer: email code + text code
+  const s1 = await call(register, { method: 'POST', body: { code: 'BBB222', email: 'new@example.com', phone: '07700 900666' } });
+  assert.deepEqual([s1.status, s1.body.emailSent, s1.body.phoneSent], [200, true, true]);
+  assert.equal(D.tables.tags.find(t => t.code === 'BBB222').owner_id, null, 'nothing registered before codes are checked');
+  const emailCode = lastCode('new@example.com'), textCode = lastTextCode('+447700900666');
+  assert.match(emailCode, /^\d{6}$/); assert.match(textCode, /^\d{6}$/);
+  assert.ok(!JSON.stringify(D.tables.verifications).includes(emailCode), 'codes stored hashed');
+  const wrong = await call(register, { method: 'POST', body: { id: s1.body.id, emailCode, phoneCode: '000000' } });
+  assert.equal(wrong.status, 400); assert.match(wrong.body.error, /text code/);
+  const ok = await call(register, { method: 'POST', body: { id: s1.body.id, emailCode, phoneCode: textCode } });
+  assert.equal(ok.status, 200);
+  assert.equal((await call(register, { method: 'POST', body: { id: s1.body.id, emailCode, phoneCode: textCode } })).status, 400, 'single use');
+  // 5 wrong tries locks it
+  const s2 = await call(register, { method: 'POST', body: { code: 'CCC333', email: 'x@example.com', phone: '07700 900777' } });
+  for (let i = 0; i < 5; i++) await call(register, { method: 'POST', body: { id: s2.body.id, emailCode: '111111', phoneCode: '111111' } });
+  assert.equal((await call(register, { method: 'POST', body: { id: s2.body.id, emailCode: lastCode('x@example.com'), phoneCode: lastTextCode('+447700900777') } })).status, 429);
+  // existing customer: email code only
+  const s3 = await call(register, { method: 'POST', body: { code: 'CCC333', email: 'sam@example.com', phone: '07700 900888' } });
+  assert.deepEqual([s3.body.emailSent, s3.body.phoneSent], [true, false]);
+});
+
+test('register: before texts are live, email code only', async () => {
+  setServices({ db: D, currentUser: async () => null, sendSms: async (to, body) => { texts.push({ to, body }); }, sendEmail: async m => { emails.push(m); }, textsEnabled: false });
+  const s1 = await call(register, { method: 'POST', body: { code: 'BBB222', email: 'early@example.com', phone: '07700 900666' } });
+  assert.equal(s1.body.phoneSent, false);
+  assert.equal(texts.length, 0);
+  assert.equal((await call(register, { method: 'POST', body: { id: s1.body.id, emailCode: lastCode('early@example.com') } })).status, 200);
+});
+
+test('changing your mobile needs a texted code', async () => {
+  const r = await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam', phone: '07700 900999' } });
+  assert.equal(r.body.needCode, true);
+  assert.equal(D.tables.owners[0].phone, '+447700900123', 'not changed yet');
+  assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { id: r.body.id, phoneCode: '000000' } })).status, 400);
+  const ok = await call(me, { method: 'PATCH', headers: as('sam'), body: { id: r.body.id, phoneCode: lastTextCode('+447700900999') } });
+  assert.equal(ok.body.owner.phone, '+447700900999');
+  assert.equal(D.tables.owners[0].phone, '+447700900999');
 });
 
 test('register and code lookups are rate limited per IP', async () => {
@@ -202,7 +253,7 @@ test('account: see tags and messages without finder numbers, update details, del
   assert.equal(r.body.conversations[0].canReply, true);
   assert.ok(!JSON.stringify(r.body).includes('900999'), 'finder number never sent to browser');
   assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam E', phone: '020 7946 0000' } })).status, 400);
-  assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam E', phone: '07700 900888' } })).body.owner.phone, '+447700900888');
+  assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam E', phone: '07700 900888' } })).body.needCode, true);
   await call(me, { method: 'DELETE', headers: as('sam') });
   assert.equal(D.tables.owners.length, 0);
   assert.equal(D.tables.tags.find(t => t.code === 'AAA111').owner_id, null);

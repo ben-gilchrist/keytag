@@ -1,10 +1,13 @@
 // /api/me   (logged in)
 // GET    → your details, your tags and messages from finders
-// PATCH  { name, phone } → update your details
+// PATCH  { name, phone } → update your details. A new mobile number must be confirmed with a
+//        texted code once texts are live: the first call returns { needCode, id }, then
+//        PATCH { id, phoneCode } saves it.
 // DELETE → delete your account (your tags stop working until set up again)
 
-import { db, currentUser } from '../lib/services.js';
+import { db, currentUser, textsEnabled } from '../lib/services.js';
 import { handler, json, fail, normPhone, cleanName } from '../lib/util.js';
+import { startVerification, checkVerification } from '../lib/verify.js';
 
 export default handler(['GET', 'PATCH', 'DELETE'], async (req, res) => {
   const user = await currentUser(req);
@@ -32,11 +35,31 @@ export default handler(['GET', 'PATCH', 'DELETE'], async (req, res) => {
 
   if (req.method === 'PATCH') {
     const b = req.body || {};
+    const { data: current } = await db().from('owners').select('name, phone').eq('id', user.id).maybeSingle();
+    if (!current) return fail(res, 404, 'No Keytag account found.');
+
+    if (b.id) {   // confirming a new number
+      const check = await checkVerification(b.id, { phoneCode: b.phoneCode }, 'phone_change');
+      if (check.error) return fail(res, check.status, check.error);
+      if (check.row.owner_id !== user.id) return fail(res, 400, 'Please start again.');
+      const { error } = await db().from('owners').update({ phone: check.row.phone, updated_at: new Date().toISOString() }).eq('id', user.id);
+      if (error) throw error;
+      return json(res, 200, { ok: true, owner: { name: current.name, phone: check.row.phone, email: user.email } });
+    }
+
     const name = cleanName(b.name) || null;
     const phone = normPhone(b.phone);
     if (!phone) return fail(res, 400, 'Enter a mobile number we can text, like 07700 900123.');
-    const { error } = await db().from('owners').update({ name, phone, updated_at: new Date().toISOString() }).eq('id', user.id);
+    const { error } = await db().from('owners').update({ name, updated_at: new Date().toISOString() }).eq('id', user.id);
     if (error) throw error;
+
+    if (phone !== current.phone) {
+      if (textsEnabled()) {
+        const v = await startVerification({ purpose: 'phone_change', ownerId: user.id, phone, sendPhoneCode: true });
+        return json(res, 200, { ok: true, needCode: true, id: v.id, phone, owner: { name, phone: current.phone, email: user.email } });
+      }
+      await db().from('owners').update({ phone }).eq('id', user.id);   // texts not live yet: nothing to confirm with
+    }
     return json(res, 200, { ok: true, owner: { name, phone, email: user.email } });
   }
 

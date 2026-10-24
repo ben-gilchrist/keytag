@@ -14,7 +14,7 @@ The keyring tag that helps lost keys get home. This is the live site and the ser
 ## How it works
 
 - **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`). The QR code links to `KEYTAG.CO.UK/T/CODE`.
-- **Registering.** Register Keytag → enter the code → email and mobile (and an optional name like "House") → Save. Unknown codes show "Code not found". A code that's already registered offers an email link to edit details. One email can hold any number of tags: extra tags join the same account and keep the existing mobile number. A confirmation email with a log-in link is sent each time.
+- **Registering.** Register Keytag → enter the code → email and mobile (and an optional name like "House") → Save → enter the 6-digit code we email (and text, once texts are live). Codes expire in 15 minutes, allow 5 tries and work once. Changing your mobile later also needs a texted code. Unknown codes show "Code not found". A code that's already registered offers an email link to edit details. One email can hold any number of tags: extra tags join the same account and keep the existing mobile number. A confirmation email with a log-in link is sent each time.
 - **Guessing protection.** Wrong codes are limited to 30 an hour per IP address, and registrations to 10 an hour. Only a scrambled IP is stored, for 24 hours.
 - **Finder.** Scans the tag, says where the keys are, and can choose to leave a number. The owner gets a text and an email.
 - **Masked replies.** Owner and finder text the one Keytag number, and the server passes messages between them. Neither ever sees the other's number. A finder can also text the tag code to the Keytag number to report keys. If someone is in two conversations at once, replies go to the most recent one.
@@ -27,7 +27,7 @@ Do these in order. Each step says what to copy for the next.
 
 ### 1. Supabase (database and login)
 1. Create a project at supabase.com. Choose the **London** region.
-2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it. Then run `supabase/test-tags.sql` to add five test tags. (Already ran schema.sql before? Also run `supabase/002-simple-registration.sql`.)
+2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it. Then run `supabase/test-tags.sql` to add five test tags. (Already ran schema.sql before? Also run `supabase/002-simple-registration.sql` and `supabase/003-verification-codes.sql`.)
 3. **Authentication → URL Configuration**: Site URL `https://keytag.co.uk`. Add redirect URL `https://keytag.co.uk/**`.
 4. **Authentication → Emails → SMTP settings**: turn on custom SMTP with Resend (step 2), so login emails come from keytag.co.uk. Supabase's built-in sender only allows a few emails an hour.
    Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender `hello@keytag.co.uk`.
