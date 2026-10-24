@@ -1,0 +1,205 @@
+// End-to-end checks of the server functions against a fake database, texts and emails.
+// Run: npm test
+
+import { test, beforeEach } from 'node:test';
+import assert from 'node:assert/strict';
+import { setServices } from '../lib/services.js';
+import { fakeDb, mockReq, mockRes } from './fake-db.js';
+import { normPhone, gsm, randomCode, CODE_ALPHABET } from '../lib/util.js';
+
+import scan from '../api/scan.js';
+import message from '../api/message.js';
+import inbound from '../api/sms-inbound.js';
+import claim from '../api/claim.js';
+import me from '../api/me.js';
+import tag from '../api/tag.js';
+import admin from '../api/admin.js';
+import signup from '../api/signup.js';
+
+process.env.SITE_URL = 'https://keytag.co.uk';
+process.env.ADMIN_EMAILS = 'ben@keytag.co.uk';
+
+let D, texts, emails;
+const USERS = {
+  sam: { id: 'u-sam', email: 'sam@example.com', user_metadata: { name: 'Sam Example', phone: '07700 900123' } },
+  ana: { id: 'u-ana', email: 'ana@example.com', user_metadata: { name: 'Ana New', phone: '07700 900222' } },
+  ben: { id: 'u-ben', email: 'ben@keytag.co.uk', user_metadata: {} }
+};
+
+beforeEach(() => {
+  D = fakeDb({
+    owners: [{ id: 'u-sam', name: 'Sam Example', email: 'sam@example.com', phone: '+447700900123' }],
+    tags: [
+      { code: 'AAA111', claim_key: 'PINAAA', owner_id: 'u-sam', batch: 'test' },
+      { code: 'BBB222', claim_key: 'PINBBB', owner_id: null, batch: 'test' },
+      { code: 'CCC333', claim_key: 'PINCCC', owner_id: null, batch: 'test' }
+    ]
+  });
+  texts = []; emails = [];
+  setServices({
+    db: D,
+    currentUser: async req => USERS[(req.headers.authorization || '').replace('Bearer ', '')] || null,
+    sendSms: async (to, body) => { texts.push({ to, body }); },
+    sendEmail: async m => { emails.push(m); },
+    validTwilioRequest: req => req.headers['x-twilio-signature'] === 'ok',
+    textsEnabled: true
+  });
+});
+
+async function call(h, opts) { const res = mockRes(); await h(mockReq(opts), res); return { status: res.statusCode, body: res.headers['content-type']?.includes('json') ? res.json() : res.body }; }
+const as = who => ({ authorization: `Bearer ${who}` });
+const sms = (from, Body) => call(inbound, { method: 'POST', headers: { 'x-twilio-signature': 'ok' }, body: { From: from, Body } });
+
+test('helpers: phone numbers, plain-text SMS, codes', () => {
+  assert.equal(normPhone('07700 900123'), '+447700900123');
+  assert.equal(normPhone('+44 7700 900123'), '+447700900123');
+  assert.equal(normPhone('0044 7700 900123'), '+447700900123');
+  assert.equal(normPhone('020 7946 0000'), null);            // landline
+  assert.equal(normPhone('hello'), null);
+  assert.equal(gsm('It’s “here” – ok 😀'), 'It\'s "here" - ok ');
+  const c = randomCode(6);
+  assert.equal(c.length, 6);
+  assert.ok([...c].every(ch => CODE_ALPHABET.includes(ch)));
+  assert.ok(!/[0O1IL2Z5S8B]/.test(CODE_ALPHABET));
+});
+
+test('scan: unknown, finder, set-up and owner test', async () => {
+  assert.equal((await call(scan, { query: { code: 'ZZZ999' } })).body.status, 'unknown');
+  assert.equal((await call(scan, { query: { code: 'aaa-111' } })).body.status, 'registered');
+  const setup = await call(scan, { query: { code: 'BBB222', k: 'pinbbb' } });
+  assert.deepEqual([setup.body.status, setup.body.claimable], ['unregistered', true]);
+  assert.equal((await call(scan, { query: { code: 'BBB222', k: 'WRONG1' } })).body.claimable, false);
+  const mine = await call(scan, { query: { code: 'AAA111' }, headers: as('sam') });
+  assert.equal(mine.body.status, 'yours');
+  assert.ok(emails.some(e => e.subject === 'Your Keytag works'));
+  assert.equal(D.tables.scans.length, 4);
+  assert.ok(emails.some(e => e.subject.startsWith('[Keytag]')), 'admin told about scans');
+});
+
+test('finder message: owner gets a text and email, no number leaks', async () => {
+  const r = await call(message, { method: 'POST', body: { code: 'AAA111', body: 'Handed in at the café on Old Street', allowContact: true, phone: '07700 900999' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.canReply, true);
+  const t = texts.find(x => x.to === '+447700900123');
+  assert.ok(t && t.body.includes('Handed in at the caf'), 'owner texted');
+  assert.ok(!t.body.includes('900999'), 'finder number not in owner text');
+  assert.ok(/^[\x20-\x7E£]*$/.test(t.body.replace(/é/g, '')), 'plain characters only');
+  assert.ok(emails.some(e => e.to === 'sam@example.com' && e.subject === 'Someone found your keys'));
+  assert.equal(D.tables.conversations[0].finder_phone, '+447700900999');
+});
+
+test('finder message: needs a valid number when contact is allowed; unregistered tags refused; rate limited', async () => {
+  assert.equal((await call(message, { method: 'POST', body: { code: 'AAA111', body: 'x', allowContact: true, phone: 'nope' } })).status, 400);
+  assert.equal((await call(message, { method: 'POST', body: { code: 'BBB222', body: 'Found them' } })).status, 404);
+  for (let i = 0; i < 5; i++) assert.equal((await call(message, { method: 'POST', body: { code: 'AAA111', body: `msg ${i}` } })).status, 200);
+  assert.equal((await call(message, { method: 'POST', body: { code: 'AAA111', body: 'one too many' } })).status, 429);
+});
+
+test('text relay: owner and finder reply to each other through the Keytag number', async () => {
+  await call(message, { method: 'POST', body: { code: 'AAA111', body: 'I still have them', allowContact: true, phone: '07700900999' } });
+  texts = [];
+  await sms('+447700900123', 'Thank you! Can I collect at 6?');
+  assert.deepEqual(texts.map(t => t.to), ['+447700900999']);
+  assert.ok(texts[0].body.includes('Can I collect at 6?'));
+  assert.ok(!texts[0].body.includes('900123'), 'owner number hidden');
+  texts = [];
+  await sms('+447700900999', 'Yes, see you then');
+  assert.deepEqual(texts.map(t => t.to), ['+447700900123']);
+  assert.equal(D.tables.messages.length, 3);
+});
+
+test('text relay: owner reply when finder left no number gets a polite explanation', async () => {
+  await call(message, { method: 'POST', body: { code: 'AAA111', body: 'At the bar' } });
+  texts = [];
+  const r = await sms('+447700900123', 'Thanks');
+  assert.equal(texts.length, 0);
+  assert.match(r.body, /didn&apos;t leave a number/);
+});
+
+test('text relay: a stranger can report keys by texting the tag code', async () => {
+  const r = await sms('+447700900555', 'aaa-111 left them with the barman at the Crown');
+  assert.match(r.body, /passed your message/);
+  assert.equal(texts[0].to, '+447700900123');
+  assert.ok(texts[0].body.includes('left them with the barman'));
+  const help = await sms('+447700900556', 'hello?');
+  assert.match(help.body, /text the 6-character code/);
+});
+
+test('text relay: rejects requests not signed by Twilio, ignores STOP', async () => {
+  const r = await call(inbound, { method: 'POST', headers: { 'x-twilio-signature': 'bad' }, body: { From: '+447700900123', Body: 'hi' } });
+  assert.equal(r.status, 403);
+  const stop = await sms('+447700900123', 'STOP');
+  assert.equal(stop.body, '<?xml version="1.0" encoding="UTF-8"?><Response/>');
+});
+
+test('claim: new owner sets up a tag with the right PIN only', async () => {
+  assert.equal((await call(claim, { method: 'POST', body: { code: 'BBB222', key: 'PINBBB' } })).status, 401);
+  assert.equal((await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'BBB222', key: 'WRONG1' } })).status, 403);
+  const ok = await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'BBB222', key: 'PINBBB' } });
+  assert.deepEqual([ok.status, ok.body.ok, ok.body.newOwner], [200, true, true]);
+  assert.equal(D.tables.owners.find(o => o.id === 'u-ana').phone, '+447700900222');
+  assert.equal(D.tables.tags.find(t => t.code === 'BBB222').owner_id, 'u-ana');
+  // someone else can't take it
+  assert.equal((await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'BBB222', key: 'PINBBB' } })).status, 409);
+});
+
+test('claim: existing owner adding a tag keeps their details', async () => {
+  D.tables.owners[0].phone = '+447700900777';
+  const r = await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333', key: 'PINCCC' } });
+  assert.equal(r.body.newOwner, false);
+  assert.equal(D.tables.owners[0].phone, '+447700900777');
+});
+
+test('account: see tags and messages without finder numbers, update details, delete', async () => {
+  await call(message, { method: 'POST', body: { code: 'AAA111', body: 'At reception', allowContact: true, phone: '07700900999' } });
+  const r = await call(me, { headers: as('sam') });
+  assert.equal(r.body.tags.length, 1);
+  assert.equal(r.body.conversations[0].canReply, true);
+  assert.ok(!JSON.stringify(r.body).includes('900999'), 'finder number never sent to browser');
+  assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam E', phone: '020 7946 0000' } })).status, 400);
+  assert.equal((await call(me, { method: 'PATCH', headers: as('sam'), body: { name: 'Sam E', phone: '07700 900888' } })).body.owner.phone, '+447700900888');
+  await call(me, { method: 'DELETE', headers: as('sam') });
+  assert.equal(D.tables.owners.length, 0);
+  assert.equal(D.tables.tags.find(t => t.code === 'AAA111').owner_id, null);
+});
+
+test('tags: gift sends a set-up link with a new PIN; remove stops the old PIN working', async () => {
+  const g = await call(tag, { method: 'POST', headers: as('sam'), body: { action: 'gift', code: 'AAA111', name: 'Jo', email: 'jo@example.com' } });
+  assert.equal(g.status, 200);
+  const t = D.tables.tags.find(x => x.code === 'AAA111');
+  assert.equal(t.owner_id, null);
+  assert.notEqual(t.claim_key, 'PINAAA');
+  const mail = emails.find(e => e.to === 'jo@example.com');
+  assert.ok(mail.text.includes(`/t/AAA111/${t.claim_key}`));
+  // remove
+  await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333', key: 'PINCCC' } });
+  await call(tag, { method: 'POST', headers: as('sam'), body: { action: 'remove', code: 'CCC333' } });
+  assert.equal((await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'CCC333', key: 'PINCCC' } })).status, 403);
+  // can't act on someone else's tag
+  assert.equal((await call(tag, { method: 'POST', headers: as('ana'), body: { action: 'remove', code: 'AAA111' } })).status, 404);
+});
+
+test('admin: staff only, no finder numbers', async () => {
+  await call(message, { method: 'POST', body: { code: 'AAA111', body: 'Here', allowContact: true, phone: '07700900999' } });
+  assert.equal((await call(admin, { headers: as('sam') })).status, 403);
+  const r = await call(admin, { headers: as('ben') });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.stats.tagsActive, 1);
+  assert.ok(!JSON.stringify(r.body).includes('900999'));
+});
+
+test('signup list', async () => {
+  assert.equal((await call(signup, { method: 'POST', body: { email: 'x' } })).status, 400);
+  assert.equal((await call(signup, { method: 'POST', body: { email: 'A@b.com' } })).status, 200);
+  await call(signup, { method: 'POST', body: { email: 'a@b.com' } });
+  assert.equal(D.tables.signups.length, 1);
+});
+
+test('before the Twilio number is live: email only, finder numbers ignored', async () => {
+  setServices({ db: D, currentUser: async () => null, sendSms: async (to, body) => { texts.push({ to, body }); }, sendEmail: async m => { emails.push(m); }, textsEnabled: false });
+  const r = await call(message, { method: 'POST', body: { code: 'AAA111', body: 'At reception', allowContact: true, phone: '07700900999' } });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.canReply, false);
+  assert.equal(D.tables.conversations[0].finder_phone, null);
+  assert.ok(emails.some(e => e.to === 'sam@example.com'));
+});

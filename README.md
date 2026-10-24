@@ -1,0 +1,94 @@
+# Keytag
+
+The keyring tag that helps lost keys get home. This is the live site and the services behind it.
+
+| Part | Does | Lives in |
+| --- | --- | --- |
+| Site | Homepage, shop, set-up, finder page, account, admin | `public/index.html` (built from `src/`) |
+| Server functions | Scans, finder messages, text relay, tag set-up, account | `api/` |
+| Database + login | Tags, owners, messages; email login links | Supabase (`supabase/schema.sql`) |
+| Texts | Owner alerts and the masked reply relay | Twilio, one UK mobile number |
+| Emails | Owner alerts, tests, gifts, admin alerts | Resend, from keytag.co.uk |
+| Checkout | Payment, VAT, orders, shipping | Shopify cart link |
+
+## How it works
+
+- **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`) and a 6-character set-up PIN. The QR code links to `KEYTAG.CO.UK/T/CODE/PIN`, so scanning a new tag lets the owner set it up straight away. The PIN is also on the card in the box, for typing the code in by hand. Nobody can guess their way into setting up someone else's tag.
+- **Set-up.** Name, email and mobile, then an email link to confirm. Existing customers keep their details when they add another tag.
+- **Finder.** Scans the tag, says where the keys are, and can choose to leave a number. The owner gets a text and an email.
+- **Masked replies.** Owner and finder text the one Keytag number, and the server passes messages between them. Neither ever sees the other's number. A finder can also text the tag code to the Keytag number to report keys. If someone is in two conversations at once, replies go to the most recent one.
+- **Owner test.** Scanning your own tag while logged in shows "Your tag works" and sends a test email. No text, so testing is free.
+- **Privacy.** Only name, email and mobile are kept. Finder numbers are never shown to owners, admins or the browser. Messages and finder numbers are deleted after 90 days.
+
+## Setting it up
+
+Do these in order. Each step says what to copy for the next.
+
+### 1. Supabase (database and login)
+1. Create a project at supabase.com. Choose the **London** region.
+2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it. Then run `supabase/test-tags.sql` to add five test tags.
+3. **Authentication → URL Configuration**: Site URL `https://keytag.co.uk`. Add redirect URL `https://keytag.co.uk/**`.
+4. **Authentication → Emails → SMTP settings**: turn on custom SMTP with Resend (step 2), so login emails come from keytag.co.uk. Supabase's built-in sender only allows a few emails an hour.
+   Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender `hello@keytag.co.uk`.
+5. Optional but recommended: **Database → Extensions** turn on `pg_cron`, then in the SQL editor run
+   `select cron.schedule('keytag-purge', '0 3 * * *', 'select public.purge_old_data()');`
+6. Copy from **Project Settings → API**: Project URL, `anon` key, `service_role` key.
+
+### 2. Resend (email)
+1. Create an account at resend.com, **Domains → Add domain** `keytag.co.uk`, and add the DNS records it shows at your domain registrar.
+2. **API Keys → Create**. Copy it.
+
+### 3. Twilio (texts)
+1. Create an account at twilio.com and upgrade it (trial accounts can only text verified numbers).
+2. **Phone Numbers → Buy a number**: United Kingdom, mobile, with SMS. UK numbers need a regulatory bundle (business address and ID). Approval can take a few days.
+3. On the number's settings, under **Messaging → A message comes in**: Webhook, `https://keytag.co.uk/api/sms-inbound`, HTTP POST.
+4. Copy the Account SID, Auth Token and the number.
+
+### 4. Shopify (checkout)
+1. Add a product "Keytag" at **£14**.
+2. **Discounts → Create discount → Amount off products**, automatic: £2 off each Keytag, minimum quantity 2. Make a second one: £4 off each, minimum quantity 5. Leave them set not to combine, so the bigger saving applies.
+3. Find the product's variant ID (open the variant in the admin; it's the number at the end of the address).
+4. Your checkout link is `https://YOUR-STORE.myshopify.com/cart/VARIANT_ID:{QTY}`. Leave `{QTY}` as it is.
+
+### 5. Vercel (hosting)
+1. Create an account at vercel.com. Either push this folder to a GitHub repo and import it, or run `npx vercel` in this folder.
+2. **Settings → Environment Variables**: add everything in `.env.example`.
+3. **Settings → Domains**: add `keytag.co.uk` and follow the DNS instructions.
+4. Redeploy after adding the variables.
+
+### 6. Try it
+- `https://keytag.co.uk/t/TEST01/PIN001` is the same as scanning a brand-new tag. Set it up with your own email and mobile.
+- Open `https://keytag.co.uk/t/TEST01` in a private window (you're now a finder) and send a message. You should get a text and an email.
+- Tick "Let the owner contact me" with a second phone, then reply to the text from your own phone.
+- `https://keytag.co.uk/admin` shows activity for the emails in `ADMIN_EMAILS`.
+- Before launch: `delete from public.tags where batch = 'test';`
+
+## Making tag codes for the manufacturer
+
+```
+npm install
+npm run codes -- --count 500 --batch 001 --insert
+```
+
+With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, this checks for clashes and adds the tags to the database. It writes `out/batch-001/`:
+
+- `codes.csv`: code, printed code (`7H4-Q9M`), PIN and QR link. Send to the manufacturer and the card printer.
+- `qr/*.svg`: one vector QR per tag. Send to the manufacturer.
+- `import.sql`: the same tags as SQL, if you'd rather paste them into Supabase.
+
+Codes avoid look-alike characters (no 0/O, 1/I/L, 2/Z, 5/S, 8/B).
+
+## Running costs
+
+Texts are the only per-use cost. A finder's message is up to about 300 characters, so usually **2 text segments** (about 9p) to the owner. Each relayed reply is 1–2 segments, and incoming texts cost under 1p. Owner tests send an email, so they're free. Fixed: about $2.50 a month for the UK number, plus Vercel Pro ($20) and Supabase Pro ($25) once live.
+
+## Changing the site
+
+Edit files in `src/` (`app.js`, `styles.css`, `shell.html`, `helpers.js`), then run `node scripts/build-site.mjs`. Vercel runs this on every deploy too.
+
+## Tests
+
+```
+npm test             # server functions against a fake database, texts and emails
+node test/e2e.mjs    # the real page in a browser, through every journey (needs Playwright)
+```

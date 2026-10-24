@@ -1,0 +1,17 @@
+{
+  "name": "keytag",
+  "private": true,
+  "type": "module",
+  "description": "Keytag: the keyring tag that helps lost keys get home.",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "test": "node --test test/flows.test.js",
+    "codes": "node scripts/generate-codes.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "2.45.4",
+    "qrcode": "1.5.4",
+    "resend": "4.0.1",
+    "twilio": "5.3.4"
+  }
+}
