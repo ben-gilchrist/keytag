@@ -4,7 +4,7 @@
 import fs from 'node:fs';
 
 const read = f => fs.readFileSync(new URL(`../src/${f}`, import.meta.url), 'utf8');
-const app = read('app.js').replace('/*__HELPERS__*/', read('helpers.js'));
+const app = read('app.js').replace('/*__HELPERS__*/', () => read('helpers.js')).replace('/*__LEGAL__*/', () => read('legal.js'));
 const html = read('shell.html')
   .replace('/*__STYLES__*/', () => read('styles.css'))
   .replace('/*__APP__*/', () => app);

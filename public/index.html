@@ -435,6 +435,35 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
 @media (prefers-reduced-motion:no-preference){.view > *{animation:rise .35s cubic-bezier(.2,.7,.2,1) both}.view > *:nth-child(2){animation-delay:.04s}.view > *:nth-child(3){animation-delay:.08s}.view > *:nth-child(4){animation-delay:.12s}
 @keyframes rise{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:none}}}
 
+/* active price card: the tier you're paying fills violet */
+.ladder .step.on{background:var(--violet);color:#fff;box-shadow:0 0 0 3px var(--violet),0 10px 24px rgba(107,79,244,.28);transform:translateY(-4px)}
+.ladder .step.on.best{box-shadow:inset 0 0 0 3px #141414,0 0 0 3px var(--violet),0 10px 24px rgba(107,79,244,.28)}
+.ladder .step.on .yours{background:#fff;color:var(--violet);border-radius:99px;padding:4px 9px;align-self:flex-start;margin-top:0}
+.ladder .step.on .pill.on{background:#fff;color:#141414}
+.ladder .step.on .pill:not(.on){box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6);color:#fff}
+.ladder .step.on .best-badge{background:#fff;color:#141414}
+.ladder .step.on .step-bar{background:rgba(255,255,255,.9)}
+.ladder .step{transition:transform .2s,background .2s,box-shadow .2s}
+@media (prefers-reduced-motion:reduce){.ladder .step{transition:none}.ladder .step.on{transform:none}}
+@media (max-width:560px){.ladder .step.on{transform:none}.ladder .step.on .yours{justify-self:start}}
+/* legal pages */
+.legal{gap:0;line-height:1.6}
+.legal h2{font-size:26px;margin:28px 0 10px}
+.legal h2:first-child{margin-top:0}
+.legal h3{font-size:18px;margin:18px 0 6px}
+.legal p{margin:0 0 12px;max-width:68ch;text-wrap:pretty}
+.legal ul{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;max-width:68ch}
+.legal li{text-wrap:pretty}
+.legal-table{margin:4px 0 16px;font-size:14.5px}
+.legal-table th,.legal-table td{padding:10px 8px}
+@media (max-width:560px){.legal-table{display:block;overflow-x:auto}}
+/* inner pages: no empty row gaps under the sticky header block */
+@media (min-width:900px){
+  .view.page{row-gap:0;column-gap:24px}
+  .view.page > :not(:first-child){margin-bottom:24px}
+}
+@media (max-width:560px){.ladder .step.on{box-shadow:0 8px 18px rgba(107,79,244,.28)}.ladder .step.on.best{box-shadow:inset 0 0 0 3px #141414,0 8px 18px rgba(107,79,244,.28)}}
+
 </style>
 </head>
 <body>
@@ -457,7 +486,7 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
     </div>
     <div class="foot-col"><span class="label">Shop</span><button class="link" data-go="buy">Keytag</button></div>
     <div class="foot-col"><span class="label">Help</span><button class="link" data-go="enter" data-arg="found">Found some keys</button><button class="link" data-go="enter" data-arg="setup">Set up a tag</button><button class="link" data-go="account">Log in</button></div>
-    <div class="foot-col"><span class="label">Legal</span><span class="small muted">Privacy policy</span><span class="small muted">Terms</span></div>
+    <div class="foot-col"><span class="label">Legal</span><button class="link" data-go="privacy">Privacy policy</button><button class="link" data-go="terms">Terms</button></div>
   </div>
   <div class="wrap"><p class="small muted foot-base">© 2026 Keytag · keytag.co.uk</p></div>
 </footer>
@@ -591,8 +620,8 @@ const views = {
     <section class="block bleed b-sky">
       <div class="in hero-grid">
         <div class="stack hero-copy">
-          <h1>Lose your keys.<br> Get a text when someone finds them</h1>
-          <p class="lede">The keyring tag that helps lost keys get home.</p>
+          <h1>The keyring tag that helps lost keys get home.</h1>
+          <p class="lede">Lose your keys.<br>Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
         <div class="hero-art">${tagArt('7H4Q9M')}</div>
@@ -616,7 +645,7 @@ const views = {
     <div class="wrap section">
     <ul class="usps" aria-label="Why Keytag">
       <li class="block b-sun"><span class="usp-ic" aria-hidden="true">${ICON.battery}</span><h3>No battery</h3><p>Nothing to charge or run out</p></li>
-      <li class="block b-violet"><span class="usp-ic" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p>Any phone can scan it</p></li>
+      <li class="block b-violet"><span class="usp-ic" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p>Any camera phone can scan it</p></li>
       <li class="block b-coral"><span class="usp-ic" aria-hidden="true">${ICON.sub}</span><h3>No subscription</h3><p>Pay once, keep it for life</p></li>
     </ul>
     </div>
@@ -698,7 +727,7 @@ const views = {
       <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
       <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
       ${pin ? `<input type="hidden" id="rPin" value="${esc(pin)}">` : `<label for="rPin">Set-up PIN<input id="rPin" class="code" required autocomplete="off" autocapitalize="characters" placeholder="On the card in the box"></label>`}
-      <p class="muted small">Finders never see your number.</p>
+      <p class="muted small">Finders never see your number. By setting up a tag you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
       <p id="regErr" class="err" hidden></p>
       <button class="btn" type="submit">Set up tag</button>
       <p class="muted small center">Already have a Keytag? <button class="link" type="button" data-go="login" data-arg="${esc(code)}">Log in to add this one</button></p>
@@ -899,8 +928,130 @@ const views = {
     </section>`; }
 };
 
+/* Privacy policy and terms. Edit the COMPANY details before launch. */
+const COMPANY = {
+  name: '[Company name] Ltd',            // TODO: legal name of the business that runs Keytag
+  number: '[company number]',            // TODO: Companies House number
+  address: '[registered address]',       // TODO
+  ico: '[ICO registration number]',      // TODO: after paying the ICO data protection fee
+  email: 'hello@keytag.co.uk',
+  updated: '24 October 2026'
+};
+
+const legalPage = (tone, title, intro, body) => `
+  ${head(tone, [`Updated ${COMPANY.updated}`], title, intro)}
+  <article class="card legal">${body}</article>`;
+
+Object.assign(views, {
+  privacy(){ return legalPage('sky', 'Privacy policy', 'We keep as little as possible: your name, email and mobile. Finders never see your details.', `
+    <h2>Who we are</h2>
+    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Our ICO registration number is ${COMPANY.ico}. Contact us at <b>${COMPANY.email}</b>.</p>
+
+    <h2>What we collect</h2>
+    <h3>If you own a Keytag</h3>
+    <ul>
+      <li><b>Name, email and mobile number</b>, so we can tell you when your keys are found.</li>
+      <li><b>Your tags</b>: which tag codes are linked to your account and when you set them up.</li>
+      <li><b>Messages from finders</b> about your keys, and your replies sent through Keytag.</li>
+    </ul>
+    <h3>If you find someone's keys</h3>
+    <ul>
+      <li><b>Your message</b> to the owner.</li>
+      <li><b>Your mobile number</b>, only if you choose “Let the owner contact me”. We use it to pass replies between you and the owner. The owner never sees it.</li>
+    </ul>
+    <h3>Everyone</h3>
+    <ul>
+      <li><b>Scans</b>: when a tag is scanned or its code is typed in, we record the tag and the time. We don't record your location.</li>
+      <li><b>Launch list</b>: your email, if you sign up for news.</li>
+      <li><b>Orders</b> are handled by our shop provider, Shopify, which processes payment and delivery details under its own privacy policy. We never see your card details.</li>
+    </ul>
+    <p>We don't use advertising cookies or tracking on this site. We store your login in your browser so you stay signed in. This is essential for the site to work.</p>
+
+    <h2>How we use it</h2>
+    <table class="legal-table">
+      <tr><th>What</th><th>Why</th><th>Legal basis</th></tr>
+      <tr><td>Owner details</td><td>To run the service you signed up for: alerting you when your keys are found</td><td>Contract</td></tr>
+      <tr><td>Finder message and number</td><td>To get the keys back to their owner and relay replies</td><td>Legitimate interests</td></tr>
+      <tr><td>Scan records</td><td>To run the service, prevent misuse and improve it</td><td>Legitimate interests</td></tr>
+      <tr><td>Launch list email</td><td>To send you Keytag news</td><td>Consent (unsubscribe any time)</td></tr>
+    </table>
+    <p>We never sell your information or use it for anyone else's marketing.</p>
+
+    <h2>Who we share it with</h2>
+    <p>Only the services that run Keytag for us, under contracts that require them to protect it:</p>
+    <ul>
+      <li><b>Supabase</b>: our database and login (stored in the UK/EU).</li>
+      <li><b>Twilio</b>: sends and receives the text messages.</li>
+      <li><b>Resend</b>: sends our emails.</li>
+      <li><b>Vercel</b>: hosts the website.</li>
+      <li><b>Shopify</b>: runs our shop and orders.</li>
+    </ul>
+    <p>Some of these companies are based in the US. Where information leaves the UK, it is protected by the UK's approved safeguards, such as the International Data Transfer Addendum or the UK–US data bridge. We may also share information if the law requires it.</p>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li><b>Account details</b>: until you delete your account.</li>
+      <li><b>Finder messages and finder numbers</b>: 90 days, then deleted automatically.</li>
+      <li><b>Scan records</b>: 12 months.</li>
+      <li><b>Launch list</b>: until you unsubscribe.</li>
+    </ul>
+
+    <h2>Your rights</h2>
+    <p>You can ask to see, correct or delete your information, object to how we use it, restrict it, or get a copy to take elsewhere. Owners can change their details or delete their account at any time from <button class="link" data-go="account">your account</button>. For anything else, email ${COMPANY.email}. We'll reply within one month.</p>
+    <p>If you're unhappy with how we've handled your information, you can complain to the Information Commissioner's Office at ico.org.uk. We'd appreciate the chance to put it right first.</p>
+
+    <h2>Age</h2>
+    <p>You must be 16 or over to set up a Keytag account. Anyone can tell an owner they've found their keys.</p>
+
+    <h2>Changes</h2>
+    <p>If we change this policy, we'll update the date at the top. If the change is significant, we'll email owners.</p>`); },
+
+  terms(){ return legalPage('sun', 'Terms', 'The short version: pay once, no subscription. We do our best to get your keys home, but we can’t promise every finder will scan.', `
+    <h2>About these terms</h2>
+    <p>These terms cover buying Keytags and using the Keytag service at keytag.co.uk. Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. Contact us at <b>${COMPANY.email}</b>.</p>
+
+    <h2>What you get</h2>
+    <ul>
+      <li>A physical tag with a unique code and QR code.</li>
+      <li>The Keytag service: when someone finds your keys and scans the tag, we pass their message to you by text and email. If they leave a number, you can reply through Keytag, and neither of you sees the other's number.</li>
+      <li>No subscription. The price you pay at checkout covers the tag and the service.</li>
+    </ul>
+
+    <h2>How long the service runs</h2>
+    <p>We intend to run the service for as long as Keytag operates. If we ever have to close it, we'll give owners at least 6 months' notice by email.</p>
+
+    <h2>What we can't promise</h2>
+    <p>Keytag helps lost keys get home, but it depends on someone finding them and choosing to scan the tag. We can't guarantee your keys will be returned, or how quickly. We also rely on phone networks and email providers to deliver messages. Please keep your mobile number up to date in your account.</p>
+
+    <h2>Buying</h2>
+    <ul>
+      <li>Prices are shown at checkout and include VAT where it applies. Delivery to the UK is free.</li>
+      <li>We currently deliver to the UK and selected European countries. We don't deliver to Asia or South America.</li>
+      <li>Orders are processed by Shopify. Your contract for the purchase is with us.</li>
+    </ul>
+
+    <h2>Returns and refunds</h2>
+    <ul>
+      <li><b>Change of mind:</b> you can cancel within 14 days of receiving your order for a full refund. Return the tags unused and not set up. Email ${COMPANY.email} to start a return.</li>
+      <li><b>Faulty tags:</b> if a tag is faulty or doesn't scan, contact us and we'll replace or refund it. This doesn't affect your legal rights under the Consumer Rights Act 2015.</li>
+    </ul>
+
+    <h2>Using Keytag fairly</h2>
+    <p>Don't use Keytag to harass, threaten or spam anyone, to send anything unlawful, or to try to discover someone's personal details. We limit how many messages can be sent, and we may block numbers or close accounts that misuse the service.</p>
+
+    <h2>Your account</h2>
+    <p>Keep your email and mobile number up to date, and don't share your login links. A tag belongs to whoever set it up. You can gift a tag to someone else or remove it from your account at any time. You must be 16 or over to set up an account.</p>
+
+    <h2>Our responsibility to you</h2>
+    <p>We're responsible for loss or damage you suffer that is a foreseeable result of us breaking these terms or not using reasonable care. We're not responsible for losses we couldn't have foreseen, or for the cost of replacing lost keys, locks or vehicles. Nothing in these terms limits our liability where it would be unlawful to do so, including for death or personal injury caused by our negligence, or fraud.</p>
+
+    <h2>Changes and law</h2>
+    <p>We may update these terms. We'll change the date at the top and, for significant changes, email owners. These terms are governed by the law of England and Wales. If you live elsewhere in the UK, you can also bring proceedings in your local courts.</p>`); }
+});
+
+
 /* ---------- routing ---------- */
-const PATHS = { home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin' };
+const PATHS = { home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
 let current = { view:'home' };
 
 async function go(view, arg, { push = true } = {}){
@@ -944,6 +1095,8 @@ async function route({ push = false } = {}){
   if (/^\/login\/?$/i.test(p)) return go('login', null, { push });
   if (/^\/account\/?$/i.test(p)) return go('account', null, { push });
   if (/^\/admin\/?$/i.test(p)) return go('admin', null, { push });
+  if (/^\/privacy\/?$/i.test(p)) return go('privacy', null, { push });
+  if (/^\/terms\/?$/i.test(p)) return go('terms', null, { push });
   return go('home', null, { push });
 }
 

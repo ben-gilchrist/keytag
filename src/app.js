@@ -41,8 +41,8 @@ const views = {
     <section class="block bleed b-sky">
       <div class="in hero-grid">
         <div class="stack hero-copy">
-          <h1>Lose your keys.<br> Get a text when someone finds them</h1>
-          <p class="lede">The keyring tag that helps lost keys get home.</p>
+          <h1>The keyring tag that helps lost keys get home.</h1>
+          <p class="lede">Lose your keys.<br>Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
         <div class="hero-art">${tagArt('7H4Q9M')}</div>
@@ -66,7 +66,7 @@ const views = {
     <div class="wrap section">
     <ul class="usps" aria-label="Why Keytag">
       <li class="block b-sun"><span class="usp-ic" aria-hidden="true">${ICON.battery}</span><h3>No battery</h3><p>Nothing to charge or run out</p></li>
-      <li class="block b-violet"><span class="usp-ic" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p>Any phone can scan it</p></li>
+      <li class="block b-violet"><span class="usp-ic" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p>Any camera phone can scan it</p></li>
       <li class="block b-coral"><span class="usp-ic" aria-hidden="true">${ICON.sub}</span><h3>No subscription</h3><p>Pay once, keep it for life</p></li>
     </ul>
     </div>
@@ -148,7 +148,7 @@ const views = {
       <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
       <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
       ${pin ? `<input type="hidden" id="rPin" value="${esc(pin)}">` : `<label for="rPin">Set-up PIN<input id="rPin" class="code" required autocomplete="off" autocapitalize="characters" placeholder="On the card in the box"></label>`}
-      <p class="muted small">Finders never see your number.</p>
+      <p class="muted small">Finders never see your number. By setting up a tag you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
       <p id="regErr" class="err" hidden></p>
       <button class="btn" type="submit">Set up tag</button>
       <p class="muted small center">Already have a Keytag? <button class="link" type="button" data-go="login" data-arg="${esc(code)}">Log in to add this one</button></p>
@@ -349,8 +349,10 @@ const views = {
     </section>`; }
 };
 
+/*__LEGAL__*/
+
 /* ---------- routing ---------- */
-const PATHS = { home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin' };
+const PATHS = { home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
 let current = { view:'home' };
 
 async function go(view, arg, { push = true } = {}){
@@ -394,6 +396,8 @@ async function route({ push = false } = {}){
   if (/^\/login\/?$/i.test(p)) return go('login', null, { push });
   if (/^\/account\/?$/i.test(p)) return go('account', null, { push });
   if (/^\/admin\/?$/i.test(p)) return go('admin', null, { push });
+  if (/^\/privacy\/?$/i.test(p)) return go('privacy', null, { push });
+  if (/^\/terms\/?$/i.test(p)) return go('terms', null, { push });
   return go('home', null, { push });
 }
 
