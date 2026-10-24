@@ -17,12 +17,12 @@ process.env.ADMIN_EMAILS = 'ben@keytag.co.uk';
 const D = fakeDb({
   owners: [{ id: 'u-sam', name: 'Sam Example', email: 'sam@example.com', phone: '+447700900123' }],
   tags: [
-    { code: 'AAA111', claim_key: 'PINAAA', owner_id: 'u-sam' },
-    { code: 'BBB222', claim_key: 'PINBBB', owner_id: null },
-    { code: 'CCC333', claim_key: 'PINCCC', owner_id: null }
+    { code: 'AAA111', owner_id: 'u-sam' },
+    { code: 'BBB222', owner_id: null },
+    { code: 'CCC333', owner_id: null }
   ]
 });
-const users = { 'u-sam': { id: 'u-sam', email: 'sam@example.com', user_metadata: {} } };
+const users = D.users; users['u-sam'] = { id: 'u-sam', email: 'sam@example.com', user_metadata: {} };
 const texts = [], emails = [];
 setServices({
   db: D,
@@ -87,48 +87,66 @@ check(texts.at(-1)?.to === '+447700900123' && texts.at(-1).body.includes('I stil
 await handlers['sms-inbound']({ method: 'POST', headers: {}, body: { From: '+447700900123', Body: 'Thanks! Pop by at 6?' } }, { status() { return this; }, setHeader() {}, end() {} });
 check(texts.at(-1)?.to === '+447700900999', 'owner reply relayed to finder');
 
-// 3. Brand-new tag: scan QR (PIN inside), register, open email link → account
-await p.goto('http://localhost:4321/t/BBB222/PINBBB');
-check((await h1()).includes('isn\'t set up'), 'new tag QR shows set-up choice');
-await p.click('text=It\'s my tag, set it up');
-check(await p.locator('#rPin[type=hidden]').count() === 1, 'PIN from the QR is used, not asked for');
-await p.fill('#rName', 'Ana New'); await p.fill('#rEmail', 'ana@example.com'); await p.fill('#rPhone', '07700 900222');
+// 3. Register: header button → code → email + mobile → Save (no PIN, no email step)
+await p.goto('http://localhost:4321/');
+await p.click('header [data-go="register"]');
+await p.fill('#rCode', 'ZZZ999'); await p.click('#regCode button[type=submit]');
+await p.waitForSelector('#rCodeErr:not([hidden])');
+check((await p.textContent('#rCodeErr')).includes('Code not found'), 'unknown code shows "Code not found"');
+await p.fill('#rCode', 'bbb-222'); await p.click('#regCode button[type=submit]');
+await p.waitForSelector('#regForm');
+await p.fill('#rEmail', 'ana@example.com'); await p.fill('#rPhone', '07700 900222'); await p.fill('#rLabel', 'House');
 await p.click('#regForm button[type=submit]');
+await p.waitForSelector('text=Your Keytag is registered');
+const anaTag = D.tables.tags.find(t => t.code === 'BBB222');
+const ana = D.tables.owners.find(o => o.email === 'ana@example.com');
+check(ana && anaTag.owner_id === ana.id && anaTag.label === 'House' && ana.phone === '+447700900222', 'tag registered with email, mobile and name straight away');
+check(emails.some(e => e.to === 'ana@example.com' && e.subject === 'Your Keytag is registered'), 'confirmation email with manage link sent');
+
+// 3b. Code already used → invited to enter email to edit details
+await p.click('text=Register another tag');
+await p.fill('#rCode', 'AAA111'); await p.click('#regCode button[type=submit]');
+await p.waitForSelector('text=This Keytag is already registered');
+await p.fill('#tEmail', 'someone@example.com'); await p.click('#takenForm button[type=submit]');
+await p.waitForSelector('#takenMsg:not([hidden])');
+check(true, 'registered code invites you to get an edit link by email');
+
+// 3c. Scanning a brand-new tag's QR also leads to register
+await p.goto('http://localhost:4321/t/CCC333');
+await p.click('text=It\'s mine, register it');
+await p.waitForSelector('#regForm');
+check(true, 'new tag QR → register form');
+
+// 4. Log in, test own tag: no text sent
+await p.goto('http://localhost:4321/login');
+await p.fill('#lEmail', 'ana@example.com'); await p.click('#loginForm button[type=submit]');
 await p.waitForSelector('text=Check your email');
 await openMagicLink();
-await p.waitForSelector('text=Hi Ana');
-check(D.tables.tags.find(t => t.code === 'BBB222').owner_id === 'u-ana', 'tag claimed by the new owner after the email link');
-check(await p.locator('text=BBB-222').count() > 0, 'account shows the tag');
-
-// 4. Owner tests their own tag: no text sent
+await p.waitForSelector('text=Your Keytags');
+check(await p.locator('.tagrow >> text=House').count() === 1, 'account shows the tag by its name');
 const before = texts.length;
 await p.click('[data-scan="BBB222"]');
 await p.waitForSelector('text=Your tag works');
 check(texts.length === before && emails.some(e => e.to === 'ana@example.com' && e.subject === 'Your Keytag works'), 'test sends an email, not a text');
 
-// 5. Add a second tag by typing code + PIN, wrong PIN first
-await p.goto('http://localhost:4321/account');
-await p.waitForSelector('#addForm');
-await p.fill('#aCode', 'CCC-333'); await p.fill('#aCodePin', 'WRONG1');
-await p.click('#addForm button[type=submit]');
-await p.waitForSelector('text=That didn’t work');
+// 5. Add a second tag from the account, by code only
 await p.goto('http://localhost:4321/account'); await p.waitForSelector('#addForm');
-await p.fill('#aCode', 'ccc333'); await p.fill('#aCodePin', 'pinccc');
+await p.fill('#aCode', 'ccc-333'); await p.fill('#aLabel2', 'Car');
 await p.click('#addForm button[type=submit]');
-await p.waitForSelector('text=CCC-333 is set up');
-check(D.tables.tags.find(t => t.code === 'CCC333').owner_id === 'u-ana', 'second tag added with typed PIN');
+await p.waitForSelector('text=CCC-333 is added');
+check(D.tables.tags.find(t => t.code === 'CCC333').owner_id === ana.id, 'second tag added to the same account');
 
 // 6. Update number
 await p.fill('#dPhone', '07700 900333'); await p.click('#detailsForm button[type=submit]');
 await p.waitForSelector('#savedMsg:not([hidden])');
-check(D.tables.owners.find(o => o.id === 'u-ana').phone === '+447700900333', 'phone number updated');
+check(D.tables.owners.find(o => o.email === 'ana@example.com').phone === '+447700900333', 'phone number updated');
 
 // 7. Log out, log back in with the existing account
 await p.click('#logout'); await p.waitForSelector('.hero-copy');
 await p.goto('http://localhost:4321/login');
 await p.fill('#lEmail', 'ana@example.com'); await p.click('#loginForm button[type=submit]');
 await p.waitForSelector('text=Check your email');
-await openMagicLink(); await p.waitForSelector('text=Hi Ana');
+await openMagicLink(); await p.waitForSelector('text=Your Keytags');
 check(true, 'log in again with an email link');
 
 // 8. Found keys typed code on an unregistered-but-unknown code

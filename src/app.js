@@ -34,7 +34,6 @@ const texts = () => CONFIG?.textsEnabled !== false;   // off until the Twilio nu
 
 /* ---------- views ---------- */
 const app = $('app');
-const PIN_HELP = 'The 6-character set-up PIN is on the card that came in the box.';
 
 const views = {
   home(){ return `
@@ -79,7 +78,7 @@ const views = {
     <div class="wrap section">
     <div class="doors">
       <button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Found keys?</span><span class="small muted">Tell the owner</span></button>
-      <button class="door b-sun" data-go="enter" data-arg="setup"><span class="disp">New tag?</span><span class="small muted">Set it up</span></button>
+      <button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">Got a new tag? Set it up</span></button>
     </div>
     </div>
     <section class="block bleed b-violet signup">
@@ -94,13 +93,10 @@ const views = {
       </div>
     </section>`; },
 
-  enter(mode){ const found = mode==='found'; return `
-    ${found
-      ? head('coral',[],'Found some keys?','Scan the tag with your phone camera, or type the code on the back.')
-      : head('sky',[],'Set up your tag','Scan the tag with your phone camera, or type the code on the back and your set-up PIN.')}
-    <form id="codeForm" class="card" data-mode="${found?'found':'setup'}">
+  enter(mode){ if (mode !== 'found') return views.register(); return `
+    ${head('coral',[],'Found some keys?','Scan the tag with your phone camera, or type the code on the back.')}
+    <form id="codeForm" class="card">
       <label for="codeIn">Code on the tag<input id="codeIn" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
-      ${found ? '' : `<label for="pinIn">Set-up PIN<input id="pinIn" class="code" placeholder="On the card in the box" autocomplete="off" autocapitalize="characters" required></label>`}
       <p id="codeErr" class="err" hidden></p>
       <button class="btn" type="submit">Continue</button>
     </form>`; },
@@ -119,20 +115,20 @@ const views = {
 
   unknownTag(code){ return `
     ${head('sun',[],'We can’t find that tag',`Check the code on the back of the tag${code?` (you entered ${esc(fmtCode(code))})`:''}. It’s 6 letters and numbers.`)}
-    <div class="doors"><button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="enter" data-arg="setup"><span class="disp">New tag?</span><span class="small muted">Set it up</span></button></div>`; },
+    <div class="doors"><button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">New tag</span></button></div>`; },
 
   newTag(code){ return `
     <section class="block b-sky">
       ${tagArt(fmtCode(code))}
-      <h1 class="center">This tag isn't set up yet</h1>
+      <h1 class="center">This Keytag isn't registered yet</h1>
       <div class="stack" style="gap:6px">
-        <button class="btn" data-go="register" data-arg="${esc(code)}">It's my tag, set it up</button>
+        <button class="btn" data-go="register" data-arg="${esc(code)}">It's mine, register it</button>
         <button class="btn ghost" data-go="unregFound" data-arg="${esc(code)}">I found these keys</button>
       </div>
     </section>`; },
 
   unregFound(code){ return `
-    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'The owner hasn’t set this tag up yet','So we can’t contact them. Thanks for trying.')}
+    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'The owner hasn’t registered this tag yet','So we can’t contact them. Thanks for trying.')}
     <section class="card">
       <h3>Best options</h3>
       <ol class="steps">
@@ -141,21 +137,46 @@ const views = {
       </ol>
     </section>`; },
 
-  register(code){ const pin = state.pending?.code===code ? state.pending.pin : ''; return `
-    ${head('violet',[],'Set up your tag','Where should we text you if your keys are found?')}
+  /* Register: step 1 = code, step 2 = email + mobile (code already checked) */
+  register(code){
+    if (!code) return `
+    ${head('violet',[],'Register your Keytag','Enter the code on the back of your tag.')}
+    <form id="regCode" class="card">
+      <label for="rCode">Code on the tag<input id="rCode" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <p id="rCodeErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+    </form>`;
+    return `
+    ${head('violet',[`Tag ${esc(fmtCode(code))}`],'Register your Keytag','Where should we text you if your keys are found?')}
     <form id="regForm" class="card" data-code="${esc(code)}">
-      <label for="rName">Name<input id="rName" required autocomplete="name" maxlength="80"></label>
       <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
       <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
-      ${pin ? `<input type="hidden" id="rPin" value="${esc(pin)}">` : `<label for="rPin">Set-up PIN<input id="rPin" class="code" required autocomplete="off" autocapitalize="characters" placeholder="On the card in the box"></label>`}
-      <p class="muted small">Finders never see your number. By setting up a tag you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
+      <label for="rLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="rLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
+      <p class="muted small">Finders never see your number or email. By registering you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
       <p id="regErr" class="err" hidden></p>
-      <button class="btn" type="submit">Set up tag</button>
-      <p class="muted small center">Already have a Keytag? <button class="link" type="button" data-go="login" data-arg="${esc(code)}">Log in to add this one</button></p>
+      <button class="btn" type="submit">Save</button>
     </form>`; },
 
-  linkSent(){ const p = state.pending || {}; const verb = p.mode==='register' ? 'switch your tag on' : p.mode==='add' ? 'add the tag to your account' : 'log in'; return `
-    ${head('lime',[],'Check your email',`Tap the link we sent to ${esc(p.email||'your email')} to ${verb}.`)}
+  registered(r){ return `
+    ${head('lime',[`Tag ${esc(fmtCode(r.code))}`], r.existing ? 'Added to your account' : 'Your Keytag is registered',
+      r.existing ? `This email already had a Keytag account, so we’ve added the tag to it and kept your number, ${esc(r.phone)}.`
+                 : `If someone finds your keys, we’ll text ${esc(r.phone)}.`)}
+    <section class="card">
+      <p class="muted">We’ve emailed you a link to change your details or add more tags any time. No password needed.</p>
+      <div class="row" style="gap:10px"><button class="btn" data-go="register">Register another tag</button><button class="btn ghost" data-go="home">Done</button></div>
+    </section>`; },
+
+  taken(code){ return `
+    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'This Keytag is already registered','If it’s yours, enter your email and we’ll send you a link to edit your details.')}
+    <form id="takenForm" class="card">
+      <label for="tEmail">Email<input id="tEmail" type="email" required autocomplete="email"></label>
+      <p id="takenMsg" class="ok" hidden>If that email matches this Keytag, we’ve sent a link. Check your inbox.</p>
+      <button class="btn" type="submit">Send me a link</button>
+      <p class="muted small">Found these keys? <button class="link" type="button" data-scan="${esc(code)}">Tell the owner</button>.</p>
+    </form>`; },
+
+  linkSent(){ const p = state.pending || {}; return `
+    ${head('lime',[],'Check your email',`Tap the link we sent to ${esc(p.email||'your email')} to log in.`)}
     <section class="card">
       <p class="muted">Open the email on any device. The link works once and expires after an hour.</p>
       <p class="muted small">Not there? Check spam or <button class="link" id="resend">send it again</button>.</p>
@@ -163,41 +184,48 @@ const views = {
       <p id="resendErr" class="err" hidden></p>
     </section>`; },
 
-  login(code){ const needPin = code && !(state.pending?.code===code && state.pending.pin); return `
-    ${head('sky',[],'Log in', code ? `We’ll add ${esc(fmtCode(code))} to your account once you’re in.` : 'We’ll email you a link. No password needed.')}
-    <form id="loginForm" class="card" data-code="${esc(code||'')}">
+  login(){ return `
+    ${head('sky',[],'Log in','We’ll email you a link. No password needed.')}
+    <form id="loginForm" class="card">
       <label for="lEmail">Email<input id="lEmail" type="email" required autocomplete="email"></label>
-      ${needPin ? `<label for="lPin">Set-up PIN<input id="lPin" class="code" required autocomplete="off" autocapitalize="characters" placeholder="On the card in the box"></label>` : ''}
       <p id="loginErr" class="err" hidden></p>
       <button class="btn" type="submit">Send link</button>
+      <p class="muted small">New Keytag? <button class="link" type="button" data-go="register">Register it</button>.</p>
     </form>`; },
 
-  claiming(){ return `${head('lime',[],'Setting up your tag…','One moment.')}`; },
+  claiming(){ return `${head('lime',[],'Adding your tag…','One moment.')}`; },
 
   needDetails(){ return `
     ${head('violet',[],'Nearly done','Where should we text you if your keys are found?')}
     <form id="detailsNeeded" class="card">
-      <label for="nName">Name<input id="nName" required autocomplete="name" maxlength="80"></label>
       <label for="nPhone">Mobile number<input id="nPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
       <p id="needErr" class="err" hidden></p>
-      <button class="btn" type="submit">Finish set-up</button>
+      <button class="btn" type="submit">Save</button>
     </form>`; },
 
   problem(msg){ return `
     ${head('coral',[],'That didn’t work', esc(msg))}
     <div class="row" style="gap:10px"><button class="btn" data-go="account">Go to my tags</button><button class="btn ghost" data-go="home">Home</button></div>`; },
 
-  addTag(code){ const pin = state.pending?.code===code ? state.pending.pin : ''; return `
+  addTag(code){ return `
     <section class="block b-sky">
       ${tagArt(fmtCode(code))}
-      <h1 class="center">Add this tag to your account?</h1>
+      <h1 class="center">Add this Keytag to your account?</h1>
       <form id="addOne" class="stack" style="gap:8px" data-code="${esc(code)}">
-        ${pin ? `<input type="hidden" id="aPin" value="${esc(pin)}">` : `<label for="aPin">Set-up PIN<input id="aPin" class="code" required autocomplete="off" autocapitalize="characters" placeholder="On the card in the box"></label>`}
-        <p id="addOneErr" class="err" hidden></p>
+        <label for="aLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="aLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
         <button class="btn" type="submit">Add ${esc(fmtCode(code))}</button>
         <button class="btn ghost" type="button" data-go="unregFound" data-arg="${esc(code)}">It's not mine, I found it</button>
       </form>
     </section>`; },
+
+  rename(code){ return `
+    ${head('sky',[`Tag ${esc(fmtCode(code))}`],'Name this tag','So you know which keys a message is about.')}
+    <form id="renameForm" class="card" data-code="${esc(code)}">
+      <label for="nLabel">Which keys?<input id="nLabel" maxlength="30" placeholder="e.g. House, Car, Bike" required></label>
+      <p id="renameErr" class="err" hidden></p>
+      <button class="btn" type="submit">Save</button>
+      <button class="btn ghost" type="button" data-go="account">Cancel</button>
+    </form>`; },
 
   yourTag(r){ return `
     ${head('lime',[],'Your tag works',`If someone finds your keys, you'll get a text at ${esc(r.phone||'your mobile')}. We've emailed you an example.`)}
@@ -241,21 +269,21 @@ const views = {
     const flash = state.flash; state.flash = null;
     if (!d.owner) return `
       ${head('violet',[],'No tags yet',`You're logged in as ${esc(d.email)}. Scan your tag to set it up.`)}
-      <button class="btn" data-go="enter" data-arg="setup">Set up a tag</button>`;
+      <button class="btn" data-go="register">Register a Keytag</button>`;
     const o = d.owner, tags = d.tags;
     return `
-    ${head('violet',[],`Hi ${esc(o.name.split(' ')[0])}`, 'Your tags and the number we text if they’re found.')}
+    ${head('violet',[], o.name ? `Hi ${esc(o.name.split(' ')[0])}` : 'Your Keytags', 'Your tags and the number we text if they’re found.')}
     ${flash ? `<p class="ok">${esc(flash)}</p>` : ''}
     <section class="card">
       <h2>Your tags</h2>
       <div class="tagrows">
       ${tags.length ? tags.map(t=>`
         <div class="tagrow">
-          <span class="disp">${esc(fmtCode(t.code))}</span>
+          <span class="stack" style="gap:2px"><span class="disp">${esc(t.label || fmtCode(t.code))}</span>${t.label ? `<span class="small muted code">${esc(fmtCode(t.code))}</span>` : ''}</span>
           <span class="row" style="gap:6px">
             <button class="btn sm" data-scan="${esc(t.code)}">Test</button>
             <details class="more"><summary class="btn ghost sm">More</summary>
-              <div class="menu"><button data-go="gift" data-arg="${esc(t.code)}">Gift to someone</button><button data-go="remove" data-arg="${esc(t.code)}">Remove</button></div>
+              <div class="menu"><button data-go="rename" data-arg="${esc(t.code)}">${t.label ? 'Rename' : 'Name it'}</button><button data-go="gift" data-arg="${esc(t.code)}">Gift to someone</button><button data-go="remove" data-arg="${esc(t.code)}">Remove</button></div>
             </details>
           </span>
         </div>`).join('') : '<p class="muted">No tags on your account.</p>'}
@@ -264,7 +292,7 @@ const views = {
         <span class="label">Add a tag</span>
         <div class="row" style="gap:8px;align-items:flex-end">
           <label for="aCode" style="flex:1 1 120px">Code<input id="aCode" class="code" placeholder="On the tag" autocomplete="off" autocapitalize="characters"></label>
-          <label for="aCodePin" style="flex:1 1 120px">Set-up PIN<input id="aCodePin" class="code" placeholder="In the box" autocomplete="off" autocapitalize="characters"></label>
+          <label for="aLabel2" style="flex:1 1 120px"><span>Which keys? <span class="muted">(optional)</span></span><input id="aLabel2" maxlength="30" placeholder="e.g. Car"></label>
           <button class="btn" type="submit">Add</button>
         </div>
         <p id="addErr" class="err" hidden></p>
@@ -282,7 +310,7 @@ const views = {
     </section>
     <form id="detailsForm" class="card">
       <h2>Your details</h2>
-      <label for="dName">Name<input id="dName" value="${esc(o.name)}" required maxlength="80"></label>
+      <label for="dName"><span>Name <span class="muted">(optional)</span></span><input id="dName" value="${esc(o.name||'')}" maxlength="80"></label>
       <label for="dPhone">Mobile number<input id="dPhone" type="tel" value="${esc(o.phone)}" required></label>
       <label for="dEmail">Email<input id="dEmail" value="${esc(o.email)}" disabled></label>
       <p id="savedMsg" class="ok" hidden>Saved</p>
@@ -352,7 +380,7 @@ const views = {
 /*__LEGAL__*/
 
 /* ---------- routing ---------- */
-const PATHS = { home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
+const PATHS = { register:'/register', home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
 let current = { view:'home' };
 
 async function go(view, arg, { push = true } = {}){
@@ -372,26 +400,38 @@ async function go(view, arg, { push = true } = {}){
   bind();
 }
 
-async function scanFlow(rawCode, rawPin){
-  const code = norm(rawCode), pin = norm(rawPin);
+async function scanFlow(rawCode){
+  const code = norm(rawCode);
   if (code.length !== 6) return go('unknownTag', code);
   let r;
-  try { r = await api(`/api/scan?code=${code}&k=${pin}`); } catch(e){ return go('problem', e.message); }
+  try { r = await api(`/api/scan?code=${code}`); } catch(e){ return go('problem', e.message); }
   if (r.status === 'unknown') return go('unknownTag', code);
   if (r.status === 'registered') return go('finder', code);
   if (r.status === 'yours') return go('yourTag', r);
-  // unregistered
-  state.pending = { code, pin: r.claimable ? pin : '' };
   return go(session ? 'addTag' : 'newTag', code);
 }
 
+/* Register step 1: check the code, then show the details form (or the right message). */
+async function registerCode(rawCode, errId){
+  const code = norm(rawCode);
+  if (code.length !== 6) { if (errId) return showErr(errId, 'Codes are 6 letters and numbers, like 7H4-Q9M.'); return go('register'); }
+  let r;
+  try { r = await api(`/api/scan?code=${code}`); } catch(e){ if (errId) return showErr(errId, e.message); return go('problem', e.message); }
+  if (r.status === 'unknown') { if (errId) return showErr(errId, 'Code not found. Check the code on the back of your tag.'); return go('unknownTag', code); }
+  if (r.status === 'yours') return go('yourTag', r);
+  if (r.status === 'registered') return go('taken', code);
+  if (session) return go('addTag', code);
+  return go('register', code);
+}
+
 async function route({ push = false } = {}){
-  const p = location.pathname, qs = new URLSearchParams(location.search);
-  const t = p.match(/^\/t\/([A-Za-z0-9-]{6,7})(?:\/([A-Za-z0-9]{6}))?\/?$/i);
-  if (t) return scanFlow(t[1], t[2] || qs.get('k'));
-  if (/^\/claim\/?$/i.test(p)) return claimFlow(qs.get('code'), qs.get('k'));
+  const p = location.pathname;
+  const t = p.match(/^\/t\/([A-Za-z0-9-]{6,7})(?:\/[A-Za-z0-9]*)?\/?$/i);
+  if (t) return scanFlow(t[1]);
+  const reg = p.match(/^\/register(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
+  if (reg) return reg[1] ? registerCode(reg[1]) : go('register', null, { push });
   if (/^\/found\/?$/i.test(p)) return go('enter', 'found', { push });
-  if (/^\/setup\/?$/i.test(p)) return go('enter', 'setup', { push });
+  if (/^\/setup\/?$/i.test(p)) return go('register', null, { push });
   if (/^\/shop\/?$/i.test(p)) return go('buy', null, { push });
   if (/^\/login\/?$/i.test(p)) return go('login', null, { push });
   if (/^\/account\/?$/i.test(p)) return go('account', null, { push });
@@ -401,14 +441,15 @@ async function route({ push = false } = {}){
   return go('home', null, { push });
 }
 
-async function claimFlow(code, key, extra){
-  code = norm(code); key = norm(key);
+/* Logged in: add a tag to your account. */
+async function claimFlow(code, extra){
+  code = norm(code);
   if (!session) return go('login');
   go('claiming');
   try {
-    const r = await api('/api/claim', { method:'POST', body:{ code, key, ...(extra||{}) } });
-    if (r.needDetails) { state.pending = { code, pin:key, mode:'details' }; return go('needDetails'); }
-    state.flash = r.already ? `${fmtCode(code)} is already on your account.` : `${fmtCode(code)} is set up. Tap Test to check it.`;
+    const r = await api('/api/claim', { method:'POST', body:{ code, ...(extra||{}) } });
+    if (r.needDetails) { state.pending = { code, label: extra?.label }; return go('needDetails'); }
+    state.flash = r.already ? `${fmtCode(code)} is already on your account.` : `${fmtCode(code)} is added. Tap Test to check it.`;
     history.replaceState({}, '', '/account');
     go('dashboard', null, { push:false });
   } catch(e){ go('problem', e.message); }
@@ -417,7 +458,7 @@ async function claimFlow(code, key, extra){
 async function sendLink(email, redirectPath, data, createUser){
   const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: site() + redirectPath, data, shouldCreateUser: createUser } });
   if (error) {
-    if (/signups not allowed|user not found/i.test(error.message)) throw new Error('No account uses that email. If you’ve just got your tag, scan it to set it up.');
+    if (/signups not allowed|user not found/i.test(error.message)) throw new Error('No account uses that email. New Keytag? Register it first.');
     if (/rate|seconds/i.test(error.message)) throw new Error('Please wait a minute before asking for another link.');
     throw new Error(error.message);
   }
@@ -428,7 +469,10 @@ function bind(){
   $('codeForm')?.addEventListener('submit', e=>{ e.preventDefault();
     const code = norm($('codeIn').value);
     if (code.length !== 6) return showErr('codeErr','Codes are 6 letters and numbers, like 7H4-Q9M.');
-    scanFlow(code, $('pinIn')?.value || ''); });
+    scanFlow(code); });
+
+  $('regCode')?.addEventListener('submit', async e=>{ e.preventDefault();
+    await busy(e.submitter, 'Checking…', () => registerCode($('rCode').value, 'rCodeErr')); });
 
   $('signupForm')?.addEventListener('submit', async e=>{ e.preventDefault();
     const btn = e.target.querySelector('button'); await busy(btn, 'Signing up…', async ()=>{
@@ -436,42 +480,39 @@ function bind(){
       catch(err){ $('suOk').hidden = false; $('suOk').textContent = err.message; } }); });
 
   $('regForm')?.addEventListener('submit', async e=>{ e.preventDefault();
-    const code = e.target.dataset.code, pin = norm($('rPin').value), name = $('rName').value.trim(), email = $('rEmail').value.trim(), phone = $('rPhone').value.trim();
+    const code = e.target.dataset.code, email = $('rEmail').value.trim(), phone = $('rPhone').value.trim(), label = $('rLabel').value.trim();
     if (!looksLikeMobile(phone)) return showErr('regErr','Enter a mobile number we can text, like 07700 900123.');
+    await busy(e.submitter, 'Saving…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ code, email, phone, label } }); go('registered', r); }
+      catch(err){ if (err.status === 409) return go('taken', code); showErr('regErr', err.message); } }); });
+
+  $('takenForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const email = $('tEmail').value.trim();
     await busy(e.submitter, 'Sending…', async ()=>{
-      try {
-        if (!state.pending?.pin || state.pending.code !== code) {           // typed PIN: check it first
-          const r = await api(`/api/scan?code=${code}&k=${pin}`);
-          if (!r.claimable) return showErr('regErr', 'That set-up PIN doesn’t match this tag. ' + PIN_HELP);
-        }
-        await sendLink(email, `/claim?code=${code}&k=${pin}`, { name, phone }, true);
-        state.pending = { mode:'register', email, code, pin, redirect:`/claim?code=${code}&k=${pin}`, data:{ name, phone } };
-        go('linkSent');
-      } catch(err){ showErr('regErr', err.message); } }); });
+      try { await sendLink(email, '/account', undefined, false); } catch(err){ if (/wait a minute/.test(err.message)) { $('takenMsg').textContent = err.message; } }
+      $('takenMsg').hidden = false; }); });   // same message either way, so nobody can test whose email it is
 
   $('loginForm')?.addEventListener('submit', async e=>{ e.preventDefault();
-    const email = $('lEmail').value.trim(), code = e.target.dataset.code;
-    const pin = (state.pending?.code === code && state.pending.pin) || norm($('lPin')?.value);
-    const redirect = code ? `/claim?code=${code}&k=${pin}` : '/account';
+    const email = $('lEmail').value.trim();
     await busy(e.submitter, 'Sending…', async ()=>{
-      try {
-        if (code && !(state.pending?.code === code && state.pending.pin)) {
-          const r = await api(`/api/scan?code=${code}&k=${pin}`);
-          if (!r.claimable) return showErr('loginErr', 'That set-up PIN doesn’t match this tag. ' + PIN_HELP);
-        }
-        await sendLink(email, redirect, undefined, false); state.pending = { mode: code ? 'add' : 'login', email, redirect }; go('linkSent'); }
+      try { await sendLink(email, '/account', undefined, false); state.pending = { email, redirect:'/account' }; go('linkSent'); }
       catch(err){ showErr('loginErr', err.message); } }); });
 
   $('resend')?.addEventListener('click', async ()=>{ const p = state.pending;
-    try { await sendLink(p.email, p.redirect, p.data, p.mode === 'register'); $('resent').hidden = false; showErr('resendErr',''); }
+    try { await sendLink(p.email, p.redirect || '/account', undefined, false); $('resent').hidden = false; showErr('resendErr',''); }
     catch(err){ showErr('resendErr', err.message); } });
 
   $('detailsNeeded')?.addEventListener('submit', e=>{ e.preventDefault();
     const phone = $('nPhone').value.trim();
     if (!looksLikeMobile(phone)) return showErr('needErr','Enter a mobile number we can text, like 07700 900123.');
-    claimFlow(state.pending.code, state.pending.pin, { name:$('nName').value.trim(), phone }); });
+    claimFlow(state.pending.code, { phone, label: state.pending.label }); });
 
-  $('addOne')?.addEventListener('submit', e=>{ e.preventDefault(); claimFlow(e.target.dataset.code, $('aPin').value); });
+  $('addOne')?.addEventListener('submit', e=>{ e.preventDefault(); claimFlow(e.target.dataset.code, { label: $('aLabel').value.trim() }); });
+
+  $('renameForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const code = e.target.dataset.code;
+    await busy(e.submitter, 'Saving…', async ()=>{
+      try { await api('/api/tag', { method:'POST', body:{ action:'label', code, label:$('nLabel').value } }); state.flash = 'Saved.'; go('dashboard'); }
+      catch(err){ showErr('renameErr', err.message); } }); });
 
   /* finder */
   document.querySelectorAll('[data-chip]').forEach(ch=>ch.addEventListener('click',()=>{
@@ -496,10 +537,9 @@ function bind(){
 
   /* account */
   $('addForm')?.addEventListener('submit', e=>{ e.preventDefault();
-    const code = norm($('aCode').value), pin = norm($('aCodePin').value);
+    const code = norm($('aCode').value);
     if (code.length !== 6) return showErr('addErr','Codes are 6 letters and numbers, like 7H4-Q9M.');
-    if (pin.length !== 6) return showErr('addErr', PIN_HELP);
-    claimFlow(code, pin); });
+    claimFlow(code, { label: $('aLabel2').value.trim() }); });
   $('detailsForm')?.addEventListener('submit', async e=>{ e.preventDefault();
     const phone = $('dPhone').value.trim();
     if (!looksLikeMobile(phone)) return showErr('detailsErr','Enter a mobile number we can text, like 07700 900123.');

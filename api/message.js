@@ -22,7 +22,7 @@ export default handler(['POST'], async (req, res) => {
   }
 
   const { data: tag, error } = await db().from('tags')
-    .select('code, owner_id, owners ( name, email, phone )').eq('code', code).maybeSingle();
+    .select('code, label, owner_id, owners ( name, email, phone )').eq('code', code).maybeSingle();
   if (error) throw error;
   if (!tag || !tag.owner_id || !tag.owners) return fail(res, 404, 'This tag isn’t set up, so we can’t reach the owner.');
 
@@ -43,12 +43,12 @@ export default handler(['POST'], async (req, res) => {
 
   const owner = tag.owners;
   // Plain characters only: a curly quote or emoji switches the whole text to a costlier encoding.
-  const sms = gsm(`Keytag: someone found your keys (tag ${code}). They said: "${body}"` +
+  const sms = gsm(`Keytag: someone found your ${tag.label ? tag.label + ' ' : ''}keys (tag ${code}). They said: "${body}"` +
     (phone ? ' Reply to this text to message them. They won\'t see your number.' : ' They didn\'t leave a number.'));
 
   const results = await Promise.allSettled([
     sendSms(owner.phone, sms),
-    sendEmail({ to: owner.email, ...foundKeysEmail({ ownerName: owner.name, code, message: body, canReply: !!phone }) }),
+    sendEmail({ to: owner.email, ...foundKeysEmail({ ownerName: owner.name, code, label: tag.label, message: body, canReply: !!phone }) }),
     process.env.ADMIN_EMAILS
       ? sendEmail({ to: env('ADMIN_EMAILS').split(',').map(s => s.trim()), ...adminScanEmail({ code, kind: 'message', message: body }) })
       : Promise.resolve()

@@ -32,6 +32,7 @@ Object.assign(views, {
     <h3>Everyone</h3>
     <ul>
       <li><b>Scans</b>: when a tag is scanned or its code is typed in, we record the tag and the time. We don't record your location.</li>
+      <li><b>Abuse protection</b>: to stop people trying codes at random, we keep a scrambled (one-way) version of your IP address for 24 hours, then delete it.</li>
       <li><b>Launch list</b>: your email, if you sign up for news.</li>
       <li><b>Orders</b> are handled by our shop provider, Shopify, which processes payment and delivery details under its own privacy policy. We never see your card details.</li>
     </ul>

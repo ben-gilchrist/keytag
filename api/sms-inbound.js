@@ -61,7 +61,7 @@ export default handler(['POST'], async (req, res) => {
   const candidates = [...text.toUpperCase().matchAll(/\b([A-Z0-9]{3})[\s-]?([A-Z0-9]{3})\b/g)].slice(0, 5);
   for (const m of candidates) {
     const code = normCode(m[1] + m[2]);
-    const { data: tag } = await db().from('tags').select('code, owner_id, owners ( phone )').eq('code', code).maybeSingle();
+    const { data: tag } = await db().from('tags').select('code, label, owner_id, owners ( phone )').eq('code', code).maybeSingle();
     if (tag?.owner_id && tag.owners?.phone) {
       const without = text.slice(0, m.index) + text.slice(m.index + m[0].length);
       const rest = cleanText(without.replace(/^[\s:,.-]+/, ''), 160) || 'I have found your keys.';
@@ -69,7 +69,7 @@ export default handler(['POST'], async (req, res) => {
         .insert({ tag_code: code, owner_id: tag.owner_id, finder_phone: from }).select('id').single();
       await db().from('messages').insert({ conversation_id: c.id, direction: 'finder_to_owner', body: rest });
       await db().from('scans').insert({ tag_code: code, kind: 'finder' });
-      await sendSms(tag.owners.phone, gsm(`Keytag: someone found your keys (tag ${code}). They said: "${rest}" Reply to this text to message them. They won't see your number.`));
+      await sendSms(tag.owners.phone, gsm(`Keytag: someone found your ${tag.label ? tag.label + ' ' : ''}keys (tag ${code}). They said: "${rest}" Reply to this text to message them. They won't see your number.`));
       return twiml(res, 'Keytag: thanks, we\'ve passed your message to the owner. If they reply, it will come from this number.');
     }
   }

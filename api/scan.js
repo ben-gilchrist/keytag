@@ -1,19 +1,24 @@
-// GET /api/scan?code=ABC123&k=PIN
+// GET /api/scan?code=ABC123
 // Called when someone opens keytag.co.uk/t/CODE (a QR scan) or types a code in.
 // Works out which page to show and logs the scan. Never reveals anything about the owner.
 
 import { db, currentUser, sendEmail, env } from '../lib/services.js';
-import { handler, json, normCode } from '../lib/util.js';
+import { handler, json, fail, normCode } from '../lib/util.js';
+import { clientKey, hits, record } from '../lib/ratelimit.js';
+
+export const MISS_LIMIT = { count: 30, windowSec: 3600 };   // wrong codes per IP per hour
 import { testEmail, adminScanEmail } from '../lib/emails.js';
 
 export default handler(['GET'], async (req, res) => {
   const code = normCode(req.query.code);
-  const key = normCode(req.query.k);
-  if (code.length !== 6) return json(res, 200, { status: 'unknown' });
+  // Stop anyone trying codes at random: limit wrong guesses per IP.
+  const missKey = clientKey(req, 'miss');
+  if (await hits(missKey, MISS_LIMIT.windowSec) >= MISS_LIMIT.count) return fail(res, 429, 'Too many codes tried. Please try again in an hour.');
+  if (code.length !== 6) { await record(missKey); return json(res, 200, { status: 'unknown' }); }
 
-  const { data: tag, error } = await db().from('tags').select('code, claim_key, owner_id').eq('code', code).maybeSingle();
+  const { data: tag, error } = await db().from('tags').select('code, owner_id').eq('code', code).maybeSingle();
   if (error) throw error;
-  if (!tag) return json(res, 200, { status: 'unknown' });
+  if (!tag) { await record(missKey); return json(res, 200, { status: 'unknown' }); }
 
   const user = await currentUser(req);
   let result, kind;
@@ -35,7 +40,7 @@ export default handler(['GET'], async (req, res) => {
     result = { status: 'registered', code };
   } else {
     kind = 'setup';
-    result = { status: 'unregistered', code, claimable: key.length > 0 && key === tag.claim_key, signedIn: !!user };
+    result = { status: 'unregistered', code, signedIn: !!user };
   }
 
   await db().from('scans').insert({ tag_code: code, kind });

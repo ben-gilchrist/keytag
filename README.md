@@ -13,8 +13,9 @@ The keyring tag that helps lost keys get home. This is the live site and the ser
 
 ## How it works
 
-- **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`) and a 6-character set-up PIN. The QR code links to `KEYTAG.CO.UK/T/CODE/PIN`, so scanning a new tag lets the owner set it up straight away. The PIN is also on the card in the box, for typing the code in by hand. Nobody can guess their way into setting up someone else's tag.
-- **Set-up.** Name, email and mobile, then an email link to confirm. Existing customers keep their details when they add another tag.
+- **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`). The QR code links to `KEYTAG.CO.UK/T/CODE`.
+- **Registering.** Register Keytag → enter the code → email and mobile (and an optional name like "House") → Save. Unknown codes show "Code not found". A code that's already registered offers an email link to edit details. One email can hold any number of tags: extra tags join the same account and keep the existing mobile number. A confirmation email with a log-in link is sent each time.
+- **Guessing protection.** Wrong codes are limited to 30 an hour per IP address, and registrations to 10 an hour. Only a scrambled IP is stored, for 24 hours.
 - **Finder.** Scans the tag, says where the keys are, and can choose to leave a number. The owner gets a text and an email.
 - **Masked replies.** Owner and finder text the one Keytag number, and the server passes messages between them. Neither ever sees the other's number. A finder can also text the tag code to the Keytag number to report keys. If someone is in two conversations at once, replies go to the most recent one.
 - **Owner test.** Scanning your own tag while logged in shows "Your tag works" and sends a test email. No text, so testing is free.
@@ -26,7 +27,7 @@ Do these in order. Each step says what to copy for the next.
 
 ### 1. Supabase (database and login)
 1. Create a project at supabase.com. Choose the **London** region.
-2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it. Then run `supabase/test-tags.sql` to add five test tags.
+2. **SQL Editor → New query**: paste `supabase/schema.sql` and run it. Then run `supabase/test-tags.sql` to add five test tags. (Already ran schema.sql before? Also run `supabase/002-simple-registration.sql`.)
 3. **Authentication → URL Configuration**: Site URL `https://keytag.co.uk`. Add redirect URL `https://keytag.co.uk/**`.
 4. **Authentication → Emails → SMTP settings**: turn on custom SMTP with Resend (step 2), so login emails come from keytag.co.uk. Supabase's built-in sender only allows a few emails an hour.
    Host `smtp.resend.com`, port `465`, username `resend`, password = your Resend API key, sender `hello@keytag.co.uk`.
@@ -57,7 +58,7 @@ Do these in order. Each step says what to copy for the next.
 4. Redeploy after adding the variables.
 
 ### 6. Try it
-- `https://keytag.co.uk/t/TEST01/PIN001` is the same as scanning a brand-new tag. Set it up with your own email and mobile.
+- `https://keytag.co.uk/t/TEST01` is the same as scanning a brand-new tag. Register it with your own email and mobile.
 - Open `https://keytag.co.uk/t/TEST01` in a private window (you're now a finder) and send a message. You should get a text and an email.
 - Tick "Let the owner contact me" with a second phone, then reply to the text from your own phone.
 - `https://keytag.co.uk/admin` shows activity for the emails in `ADMIN_EMAILS`.
@@ -72,7 +73,7 @@ npm run codes -- --count 500 --batch 001 --insert
 
 With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, this checks for clashes and adds the tags to the database. It writes `out/batch-001/`:
 
-- `codes.csv`: code, printed code (`7H4-Q9M`), PIN and QR link. Send to the manufacturer and the card printer.
+- `codes.csv`: code, printed code (`7H4-Q9M`) and QR link. Send to the manufacturer.
 - `qr/*.svg`: one vector QR per tag. Send to the manufacturer.
 - `import.sql`: the same tags as SQL, if you'd rather paste them into Supabase.
 

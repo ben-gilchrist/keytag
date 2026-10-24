@@ -6,7 +6,7 @@ const RELATIONS = {
   conversations: { owners: { table: 'owners', local: 'owner_id', foreign: 'id', many: false },
                    messages: { table: 'messages', local: 'id', foreign: 'conversation_id', many: true } }
 };
-const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email' };
+const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email', rate_limits: 'id' };
 
 function parseSelect(s) {
   const fields = [], rels = [];
@@ -17,7 +17,7 @@ function parseSelect(s) {
 }
 
 export function fakeDb(seed = {}) {
-  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], ...structuredClone(seed) };
+  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], rate_limits: [], ...structuredClone(seed) };
   let seq = 1;
   const users = {};
 
@@ -43,6 +43,7 @@ export function fakeDb(seed = {}) {
       update(p) { op = 'update'; payload = p; return q; },
       delete() { op = 'delete'; return q; },
       eq(c, v) { filters.push(r => r[c] === v); return q; },
+      ilike(c, v) { filters.push(r => String(r[c] ?? '').toLowerCase() === String(v).toLowerCase()); return q; },
       is(c, v) { filters.push(r => (r[c] ?? null) === v); return q; },
       not(c, o, v) { filters.push(r => !((r[c] ?? null) === v)); return q; },
       gte(c, v) { filters.push(r => r[c] >= v); return q; },
@@ -61,7 +62,7 @@ export function fakeDb(seed = {}) {
         const list = (Array.isArray(payload) ? payload : [payload]).map(p => {
           const row = { ...p };
           if (PK[table] === 'id' && row.id === undefined) row.id = table === 'conversations' ? `c${seq++}` : seq++;
-          const stamps = table === 'scans' ? ['scanned_at'] : table === 'conversations' ? ['created_at', 'last_activity_at'] : ['created_at'];
+          const stamps = table === 'scans' ? ['scanned_at'] : table === 'conversations' ? ['created_at', 'last_activity_at'] : table === 'rate_limits' ? ['at'] : ['created_at'];
           for (const c of stamps) if (row[c] === undefined) row[c] = now();
           return row;
         });
@@ -87,7 +88,14 @@ export function fakeDb(seed = {}) {
   return {
     tables, users,
     from: query,
-    auth: { admin: { deleteUser: async id => { delete users[id]; return { error: null }; } } }
+    rpc: async (fn, args) => fn === 'user_id_by_email'
+      ? { data: Object.values(users).find(u => u.email.toLowerCase() === String(args.e).toLowerCase())?.id || null, error: null }
+      : { data: null, error: { message: 'no such function' } },
+    auth: { admin: {
+      deleteUser: async id => { delete users[id]; return { error: null }; },
+      createUser: async ({ email }) => { const id = 'u-' + email.split('@')[0]; users[id] = { id, email, user_metadata: {} }; return { data: { user: users[id] }, error: null }; },
+      generateLink: async ({ email, options }) => ({ data: { properties: { action_link: `https://fake/magic?e=${email}&to=${options.redirectTo}` } }, error: null })
+    } }
   };
 }
 

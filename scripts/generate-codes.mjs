@@ -5,13 +5,12 @@
 //   npm run codes -- --count 500 --batch 001 --insert     (also adds them to the database)
 //
 // Writes to out/batch-001/:
-//   codes.csv      batch, serial, code, pin, qr_url        → send to the manufacturer
+//   codes.csv      batch, serial, code, qr_url             → send to the manufacturer
 //   qr/CODE.svg    one vector QR per tag                    → send to the manufacturer
 //   import.sql     the same tags as SQL                      → or paste into Supabase SQL editor
 //
-// The QR link is all capitals (HTTPS://KEYTAG.CO.UK/T/CODE/PIN). Capitals let the QR use its
+// The QR link is all capitals (HTTPS://KEYTAG.CO.UK/T/CODE). Capitals let the QR use its
 // compact mode, so the code is less dense and scans better when small or scratched.
-// The PIN is also printed on the set-up card in the box, for typing the code in by hand.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -60,16 +59,15 @@ if (sb) {
 }
 
 const rows = [...codes].map((code, i) => {
-  const pin = randomCode(6);
-  return { batch, serial: i + 1, code, pin, url: `HTTPS://${domain}/T/${code}/${pin}` };
+  return { batch, serial: i + 1, code, url: `HTTPS://${domain}/T/${code}` };
 });
 
 const dir = path.join('out', `batch-${batch}`);
 fs.mkdirSync(path.join(dir, 'qr'), { recursive: true });
 
 fs.writeFileSync(path.join(dir, 'codes.csv'),
-  'batch,serial,code,code_printed,pin,qr_url\n' +
-  rows.map(r => `${r.batch},${r.serial},${r.code},${r.code.slice(0, 3)}-${r.code.slice(3)},${r.pin},${r.url}`).join('\n') + '\n');
+  'batch,serial,code,code_printed,qr_url\n' +
+  rows.map(r => `${r.batch},${r.serial},${r.code},${r.code.slice(0, 3)}-${r.code.slice(3)},${r.url}`).join('\n') + '\n');
 
 for (const r of rows) {
   const svg = await QRCode.toString(r.url, { type: 'svg', errorCorrectionLevel: 'Q', margin: 1, color: { dark: '#000000', light: '#ffffff' } });
@@ -77,12 +75,12 @@ for (const r of rows) {
 }
 
 fs.writeFileSync(path.join(dir, 'import.sql'),
-  `-- Batch ${batch}: ${rows.length} tags\ninsert into public.tags (code, claim_key, batch) values\n` +
-  rows.map(r => `  ('${r.code}', '${r.pin}', '${r.batch}')`).join(',\n') + '\non conflict (code) do nothing;\n');
+  `-- Batch ${batch}: ${rows.length} tags\ninsert into public.tags (code, batch) values\n` +
+  rows.map(r => `  ('${r.code}', '${r.batch}')`).join(',\n') + '\non conflict (code) do nothing;\n');
 
 if (args.insert) {
   for (let i = 0; i < rows.length; i += 500) {
-    const { error } = await sb.from('tags').insert(rows.slice(i, i + 500).map(r => ({ code: r.code, claim_key: r.pin, batch: r.batch })));
+    const { error } = await sb.from('tags').insert(rows.slice(i, i + 500).map(r => ({ code: r.code, batch: r.batch })));
     if (error) throw error;
   }
   console.log(`Added ${rows.length} tags to the database.`);

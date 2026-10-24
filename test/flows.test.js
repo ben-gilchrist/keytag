@@ -15,6 +15,7 @@ import me from '../api/me.js';
 import tag from '../api/tag.js';
 import admin from '../api/admin.js';
 import signup from '../api/signup.js';
+import register from '../api/register.js';
 
 process.env.SITE_URL = 'https://keytag.co.uk';
 process.env.ADMIN_EMAILS = 'ben@keytag.co.uk';
@@ -30,9 +31,9 @@ beforeEach(() => {
   D = fakeDb({
     owners: [{ id: 'u-sam', name: 'Sam Example', email: 'sam@example.com', phone: '+447700900123' }],
     tags: [
-      { code: 'AAA111', claim_key: 'PINAAA', owner_id: 'u-sam', batch: 'test' },
-      { code: 'BBB222', claim_key: 'PINBBB', owner_id: null, batch: 'test' },
-      { code: 'CCC333', claim_key: 'PINCCC', owner_id: null, batch: 'test' }
+      { code: 'AAA111', owner_id: 'u-sam', batch: 'test' },
+      { code: 'BBB222', owner_id: null, batch: 'test' },
+      { code: 'CCC333', owner_id: null, batch: 'test' }
     ]
   });
   texts = []; emails = [];
@@ -66,9 +67,8 @@ test('helpers: phone numbers, plain-text SMS, codes', () => {
 test('scan: unknown, finder, set-up and owner test', async () => {
   assert.equal((await call(scan, { query: { code: 'ZZZ999' } })).body.status, 'unknown');
   assert.equal((await call(scan, { query: { code: 'aaa-111' } })).body.status, 'registered');
-  const setup = await call(scan, { query: { code: 'BBB222', k: 'pinbbb' } });
-  assert.deepEqual([setup.body.status, setup.body.claimable], ['unregistered', true]);
-  assert.equal((await call(scan, { query: { code: 'BBB222', k: 'WRONG1' } })).body.claimable, false);
+  assert.equal((await call(scan, { query: { code: 'bbb-222' } })).body.status, 'unregistered');
+  assert.equal((await call(scan, { query: { code: 'BBB222' } })).body.status, 'unregistered');
   const mine = await call(scan, { query: { code: 'AAA111' }, headers: as('sam') });
   assert.equal(mine.body.status, 'yours');
   assert.ok(emails.some(e => e.subject === 'Your Keytag works'));
@@ -132,20 +132,65 @@ test('text relay: rejects requests not signed by Twilio, ignores STOP', async ()
   assert.equal(stop.body, '<?xml version="1.0" encoding="UTF-8"?><Response/>');
 });
 
-test('claim: new owner sets up a tag with the right PIN only', async () => {
-  assert.equal((await call(claim, { method: 'POST', body: { code: 'BBB222', key: 'PINBBB' } })).status, 401);
-  assert.equal((await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'BBB222', key: 'WRONG1' } })).status, 403);
-  const ok = await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'BBB222', key: 'PINBBB' } });
+test('register: code + email + mobile, no PIN', async () => {
+  const ok = await call(register, { method: 'POST', body: { code: 'bbb-222', email: 'Ana@Example.com', phone: '07700 900222', label: 'House' } });
+  assert.deepEqual([ok.status, ok.body.ok, ok.body.existing], [200, true, false]);
+  const t = D.tables.tags.find(x => x.code === 'BBB222');
+  assert.equal(t.label, 'House');
+  const owner = D.tables.owners.find(o => o.id === t.owner_id);
+  assert.deepEqual([owner.email, owner.phone], ['ana@example.com', '+447700900222']);
+  const mail = emails.find(e => e.to === 'ana@example.com');
+  assert.equal(mail.subject, 'Your Keytag is registered');
+  assert.ok(mail.text.includes('https://fake/magic'), 'email has a manage link');
+});
+
+test('register: code not found, already registered, bad details', async () => {
+  const nf = await call(register, { method: 'POST', body: { code: 'ZZZ999', email: 'a@b.com', phone: '07700900222' } });
+  assert.equal(nf.status, 404);
+  assert.match(nf.body.error, /Code not found/);
+  const taken = await call(register, { method: 'POST', body: { code: 'AAA111', email: 'x@y.com', phone: '07700900222' } });
+  assert.deepEqual([taken.status, taken.body.registered], [409, true]);
+  assert.equal(D.tables.tags.find(x => x.code === 'AAA111').owner_id, 'u-sam', 'existing owner untouched');
+  assert.equal((await call(register, { method: 'POST', body: { code: 'BBB222', email: 'nope', phone: '07700900222' } })).status, 400);
+  assert.equal((await call(register, { method: 'POST', body: { code: 'BBB222', email: 'a@b.com', phone: '12345' } })).status, 400);
+});
+
+test('register: one email, many tags (one account, existing number kept)', async () => {
+  const a = await call(register, { method: 'POST', body: { code: 'BBB222', email: 'sam@example.com', phone: '07700 900444', label: 'Car' } });
+  assert.deepEqual([a.status, a.body.existing, a.body.phone], [200, true, '+447700900123']);
+  const b = await call(register, { method: 'POST', body: { code: 'CCC333', email: 'SAM@example.com', phone: '07700 900555', label: 'Bike' } });
+  assert.equal(b.body.existing, true);
+  assert.equal(D.tables.owners.length, 1);
+  assert.equal(D.tables.owners[0].phone, '+447700900123', 'a stranger can’t change the number');
+  const mine = await call(me, { headers: as('sam') });
+  assert.deepEqual(mine.body.tags.map(t => t.label ?? null).sort(), ['Bike', 'Car', null].sort());
+  // finder message names the keys
+  await call(message, { method: 'POST', body: { code: 'BBB222', body: 'At the gym' } });
+  assert.ok(texts.at(-1).body.includes('found your Car keys'));
+});
+
+test('register and code lookups are rate limited per IP', async () => {
+  const ip = { 'x-forwarded-for': '1.2.3.4' };
+  for (let i = 0; i < 30; i++) await call(scan, { query: { code: `ZZZ${String(i).padStart(3, '0')}` }, headers: ip });
+  assert.equal((await call(scan, { query: { code: 'AAA111' }, headers: ip })).status, 429);
+  assert.equal((await call(scan, { query: { code: 'AAA111' }, headers: { 'x-forwarded-for': '5.6.7.8' } })).body.status, 'registered');
+  for (let i = 0; i < 10; i++) await call(register, { method: 'POST', body: { code: 'ZZZ999' }, headers: ip });
+  assert.equal((await call(register, { method: 'POST', body: { code: 'BBB222', email: 'a@b.com', phone: '07700900222' }, headers: ip })).status, 429);
+});
+
+test('claim (logged in): add a tag, someone else can’t take it', async () => {
+  assert.equal((await call(claim, { method: 'POST', body: { code: 'BBB222' } })).status, 401);
+  const ok = await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'BBB222', label: 'Office' } });
   assert.deepEqual([ok.status, ok.body.ok, ok.body.newOwner], [200, true, true]);
   assert.equal(D.tables.owners.find(o => o.id === 'u-ana').phone, '+447700900222');
-  assert.equal(D.tables.tags.find(t => t.code === 'BBB222').owner_id, 'u-ana');
-  // someone else can't take it
-  assert.equal((await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'BBB222', key: 'PINBBB' } })).status, 409);
+  assert.equal(D.tables.tags.find(t => t.code === 'BBB222').label, 'Office');
+  assert.equal((await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'BBB222' } })).status, 409);
+  assert.equal((await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'ZZZ999' } })).status, 404);
 });
 
 test('claim: existing owner adding a tag keeps their details', async () => {
   D.tables.owners[0].phone = '+447700900777';
-  const r = await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333', key: 'PINCCC' } });
+  const r = await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333' } });
   assert.equal(r.body.newOwner, false);
   assert.equal(D.tables.owners[0].phone, '+447700900777');
 });
@@ -163,20 +208,18 @@ test('account: see tags and messages without finder numbers, update details, del
   assert.equal(D.tables.tags.find(t => t.code === 'AAA111').owner_id, null);
 });
 
-test('tags: gift sends a set-up link with a new PIN; remove stops the old PIN working', async () => {
+test('tags: rename, gift (register link), remove', async () => {
+  await call(tag, { method: 'POST', headers: as('sam'), body: { action: 'label', code: 'AAA111', label: 'House' } });
+  assert.equal(D.tables.tags.find(x => x.code === 'AAA111').label, 'House');
   const g = await call(tag, { method: 'POST', headers: as('sam'), body: { action: 'gift', code: 'AAA111', name: 'Jo', email: 'jo@example.com' } });
   assert.equal(g.status, 200);
   const t = D.tables.tags.find(x => x.code === 'AAA111');
-  assert.equal(t.owner_id, null);
-  assert.notEqual(t.claim_key, 'PINAAA');
-  const mail = emails.find(e => e.to === 'jo@example.com');
-  assert.ok(mail.text.includes(`/t/AAA111/${t.claim_key}`));
-  // remove
-  await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333', key: 'PINCCC' } });
+  assert.deepEqual([t.owner_id, t.label], [null, null]);
+  assert.ok(emails.find(e => e.to === 'jo@example.com').text.includes('/register/AAA111'));
+  await call(claim, { method: 'POST', headers: as('sam'), body: { code: 'CCC333' } });
   await call(tag, { method: 'POST', headers: as('sam'), body: { action: 'remove', code: 'CCC333' } });
-  assert.equal((await call(claim, { method: 'POST', headers: as('ana'), body: { code: 'CCC333', key: 'PINCCC' } })).status, 403);
-  // can't act on someone else's tag
-  assert.equal((await call(tag, { method: 'POST', headers: as('ana'), body: { action: 'remove', code: 'AAA111' } })).status, 404);
+  assert.equal(D.tables.tags.find(x => x.code === 'CCC333').owner_id, null);
+  assert.equal((await call(tag, { method: 'POST', headers: as('ana'), body: { action: 'remove', code: 'BBB222' } })).status, 404);
 });
 
 test('admin: staff only, no finder numbers', async () => {
