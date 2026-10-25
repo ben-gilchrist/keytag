@@ -37,14 +37,19 @@ const app = $('app');
 
 const views = {
   home(){ return `
-    <section class="block bleed b-sky">
+    <section class="block bleed hero-photo">
+      <picture class="hero-img">
+        <source media="(max-width: 899px)" srcset="/assets/hero-mobile.webp" type="image/webp">
+        <source media="(max-width: 899px)" srcset="/assets/hero-mobile.jpg">
+        <source srcset="/assets/hero.webp" type="image/webp">
+        <img src="/assets/hero.jpg" alt="A Keytag with a QR code on a keyring with car and house keys" width="2400" height="1200" fetchpriority="high">
+      </picture>
       <div class="in hero-grid">
         <div class="stack hero-copy">
           <h1>The keyring tag that helps lost keys get home.</h1>
           <p class="lede">Lose your keys.<br>Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
-        <div class="hero-art">${tagArt('7H4Q9M')}</div>
       </div>
     </section>
     <div class="wrap section">
