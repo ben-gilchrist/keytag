@@ -121,9 +121,12 @@ check(true, 'registered code invites you to get an edit link by email');
 
 // 3c. Scanning a brand-new tag's QR also leads to register
 await p.goto('http://localhost:4321/t/CCC333');
-await p.click('text=It\'s mine, register it');
 await p.waitForSelector('#regForm');
-check(true, 'new tag QR → register form');
+check(new URL(p.url()).pathname === '/scan/CCC-333', 'new tag QR → set-up form on /scan/CODE');
+await p.goto('http://localhost:4321/scan');
+await p.fill('#codeIn', 'aaa-111'); await p.click('#codeForm button[type=submit]');
+await p.waitForSelector('#findForm');
+check(new URL(p.url()).pathname === '/scan/AAA-111', '/scan code entry → finder page');
 
 // 4. Log in, test own tag: no text sent
 await p.goto('http://localhost:4321/login');

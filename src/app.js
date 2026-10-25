@@ -32,6 +32,31 @@ async function busy(btn, label, fn){
 const site = () => location.origin;
 const texts = () => CONFIG?.textsEnabled !== false;   // off until the Twilio number is live
 
+
+/* sections shared by the scan pages */
+function scanKeepSafe(title = 'Can’t hang on to them?'){ return `
+    <section class="card">
+      <h2 class="card-h">${title}</h2>
+      <ol class="steps">
+        <li><div><b>Leave them somewhere staffed</b><p class="muted">The counter of the shop, café or bar where you found them, or a reception desk. Say where in your message.</p></div></li>
+        <li><div><b>On a bus or train?</b><p class="muted">Hand them to staff. Most transport companies run a lost property office.</p></div></li>
+        <li><div><b>Keep them out of sight</b><p class="muted">Don’t leave keys where anyone could pick them up.</p></div></li>
+      </ol>
+    </section>`; }
+function scanBuy(title = 'Need more Keytags?'){ return `
+    <section class="card scan-buy">
+      <div class="scan-buy-copy">
+        <h2 class="card-h">${title}</h2>
+        <p class="muted">House, car, bike, work, or a present. No battery, no app, no subscription. Free UK delivery.</p>
+      </div>
+      <ul class="scan-prices">
+        <li><span class="tier-tags" aria-hidden="true"><i class="mini"></i></span><b>1 tag</b><span>£14</span></li>
+        <li><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat(3)}</span><b>2–4 tags</b><span>£12 each</span></li>
+        <li class="best"><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat(5)}</span><b>5+ tags</b><span>£10 each</span></li>
+      </ul>
+      <button class="btn" data-go="buy">Shop Keytags</button>
+    </section>`; }
+
 /* ---------- views ---------- */
 const app = $('app');
 
@@ -122,25 +147,119 @@ const views = {
     ${head('sun',[],'We can’t find that tag',`Check the code on the back of the tag${code?` (you entered ${esc(fmtCode(code))})`:''}. It’s 6 letters and numbers.`)}
     <div class="doors"><button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">New tag</span></button></div>`; },
 
-  newTag(code){ return `
-    <section class="block b-sky">
-      ${tagArt(fmtCode(code))}
-      <h1 class="center">This Keytag isn't registered yet</h1>
-      <div class="stack" style="gap:6px">
-        <button class="btn" data-go="register" data-arg="${esc(code)}">It's mine, register it</button>
-        <button class="btn ghost" data-go="unregFound" data-arg="${esc(code)}">I found these keys</button>
+
+  /* ---------- /scan: the page people land on after scanning a tag ---------- */
+  scanStart(){ return `
+    <section class="block b-sky scan-head">
+      <span class="chip-tag">Keytag</span>
+      <h1>Scanned a Keytag?</h1>
+      <p class="lede">Enter the code on the back of the tag. Whether you’ve found some keys or you’re setting up your own, it takes a minute.</p>
+    </section>
+    <form id="codeForm" class="card">
+      <h2 class="card-h">Code on the tag</h2>
+      <label for="codeIn"><span class="sr">Code on the tag</span><input id="codeIn" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <p id="codeErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+      <p class="muted small">It’s 6 letters and numbers, printed under the QR code.</p>
+    </form>
+    <div class="doors scan-doors">
+      <div class="door b-sky"><span class="disp">Found some keys?</span><span class="small muted">Enter the code and tell the owner where they are. They never see your number.</span></div>
+      <div class="door b-sun"><span class="disp">New Keytag?</span><span class="small muted">Enter the code to add your email and mobile. No app, no password.</span></div>
+    </div>
+    ${scanBuy()}`; },
+
+  scanFound(code){ return `
+    <section class="block b-coral scan-head">
+      <span class="chip-tag">Tag ${esc(fmtCode(code))}</span>
+      <h1>You’ve found someone’s keys</h1>
+      <p class="lede">Thank you. Tell the owner where they are and they’ll ${texts() ? 'get a text' : 'hear from us'} straight away.</p>
+      <ul class="scan-ticks"><li>Free</li><li>No app</li><li>Your number stays private</li></ul>
+    </section>
+<form id="findForm" class="card scan-form" data-code="${esc(code)}">
+      <h2 class="card-h">Where are the keys?</h2>
+      <div class="choices" role="group" aria-label="Quick answers">
+        <button type="button" class="choice" data-chip="I've handed them in at ">Handed them in</button>
+        ${texts() ? '<button type="button" class="choice" data-chip="I still have them. Text me to arrange getting them back." data-keep="1">I still have them</button>' : ''}
       </div>
-    </section>`; },
+      <label for="fMsg"><span class="sr">Where are they?</span><textarea id="fMsg" required maxlength="160" placeholder="Behind the counter at the café on Old Street"></textarea></label>
+      <p id="fCount" class="muted" style="font-size:12px;text-align:right;margin-top:-10px">0 / 160</p>
+      <div class="contact-opt"${texts() ? '' : ' hidden'}>
+        <label class="switch-row" for="fAllow">
+          <input type="checkbox" id="fAllow">
+          <span class="switch" aria-hidden="true"></span>
+          <span class="switch-text"><b>Let the owner contact me</b><span class="small muted" id="allowHint">They can text you back through Keytag. They never see your number.</span></span>
+        </label>
+        <div id="phoneWrap" hidden>
+          <label for="fPhone">Your mobile<input id="fPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+        </div>
+      </div>
+      <p id="findErr" class="err" hidden></p>
+      <button class="btn" type="submit">Send</button>
+    </form>
+    <section class="card">
+      <h2 class="card-h">What happens next</h2>
+      <ol class="steps">
+        <li><div><b>The owner hears straight away</b><p class="muted">We send your message to them by ${texts() ? 'text and email' : 'email'}.</p></div></li>
+        ${texts() ? '<li><div><b>They can reply, if you let them</b><p class="muted">Tick “Let the owner contact me” and their reply comes to you as a text from Keytag.</p></div></li>' : ''}
+        <li><div><b>Nobody sees anyone’s number</b><p class="muted">Messages go through Keytag, so your details stay private, and so do theirs.</p></div></li>
+      </ol>
+    </section>
+    ${scanKeepSafe()}
+    <section class="card scan-mini">
+      <p class="muted small">Is this your tag? <button class="link" data-go="login">Log in</button> and scan it again to send yourself a test.</p>
+    </section>
+    ${scanBuy('Want one for your keys?')}`; },
+
+  scanSetup(code){ return `
+    <section class="block b-violet scan-head">
+      <span class="chip-tag">Tag ${esc(fmtCode(code))}</span>
+      <h1>Set up your Keytag</h1>
+      <p class="lede">Add where we should reach you if your keys are found. It takes a minute. No app, no password.</p>
+      <ul class="scan-ticks"><li>Free to run, no subscription</li><li>Finders never see your details</li></ul>
+    </section>
+    <form id="regForm" class="card scan-form" data-code="${esc(code)}">
+      <h2 class="card-h">Your details</h2>
+      <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
+      <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+      <label for="rLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="rLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
+      <p class="muted small">By setting up you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
+      <p id="regErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+      <p class="muted small">Not your tag? <button class="link" type="button" data-go="unregFound" data-arg="${esc(code)}">I found these keys</button></p>
+    </form>
+    <section class="card">
+      <h2 class="card-h">Three quick steps</h2>
+      <ol class="steps">
+        <li><div><b>Add your details</b><p class="muted">Your email and mobile. Already have a Keytag? Use the same email and this one joins your account.</p></div></li>
+        <li><div><b>Confirm it’s you</b><p class="muted">We email you a 6-digit code${texts() ? ', and text one to new customers' : ''}. Type it in and you’re set.</p></div></li>
+        <li><div><b>Clip it on</b><p class="muted">Put the tag on your keys. If someone finds them and scans it, you’ll hear where they are.</p></div></li>
+      </ol>
+    </section>
+    <section class="card how-mini">
+      <h2 class="card-h">How it works</h2>
+      <ol class="how-steps">
+        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><h3>Someone scans it</h3><p class="muted">Any phone camera opens a page to message you.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.text}</div><h3>You get a text</h3><p class="muted">You hear where your keys are, and can reply.</p></li>
+      </ol>
+    </section>
+    <section class="card">
+      <h2 class="card-h">Good to know</h2>
+      <div class="faq">
+        <details><summary>Will a finder see my number or email?</summary><p class="muted">No. Their message comes to you from Keytag, and your replies go back through Keytag. Neither of you sees the other’s details.</p></details>
+        <details><summary>Is there anything to pay after this?</summary><p class="muted">No. There’s no subscription and nothing to charge. The tag has no battery.</p></details>
+        <details><summary>Can I have more than one tag?</summary><p class="muted">Yes. Set each one up with the same email and they all sit in one account. Give each a name, like House or Car, so you know which keys were found.</p></details>
+        <details><summary>How do I change my details later?</summary><p class="muted"><button class="link" type="button" data-go="login">Log in</button> with your email. We send you a link, no password needed.</p></details>
+        <details><summary>Is it a present for someone else?</summary><p class="muted">Let them scan it and set it up with their own details, so the texts go to them.</p></details>
+        <details><summary>How do I check it works?</summary><p class="muted">Once you’re set up, scan the tag while logged in. We’ll email you an example of the message a finder sends.</p></details>
+      </div>
+    </section>
+    ${scanBuy('One for every set of keys')}`; },
 
   unregFound(code){ return `
-    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'The owner hasn’t registered this tag yet','So we can’t contact them. Thanks for trying.')}
-    <section class="card">
-      <h3>Best options</h3>
-      <ol class="steps">
-        <li><div><b>Hand them in where you found them</b><p class="muted">A shop, bar or station desk.</p></div></li>
-        <li><div><b>Or take them to a police station</b><p class="muted">Your nearest front desk.</p></div></li>
-      </ol>
-    </section>`; },
+    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'This tag isn’t set up yet','So we can’t reach the owner this time. Thanks for trying.')}
+    ${scanKeepSafe('Best options')}
+    ${scanBuy('Want one for your keys?')}`; },
 
   /* Register: step 1 = code, step 2 = email + mobile (code already checked) */
   register(code){
@@ -254,35 +373,13 @@ const views = {
     </form>`; },
 
   yourTag(r){ return `
-    ${head('lime',[],'Your tag works',`If someone finds your keys, you'll get a text at ${esc(r.phone||'your mobile')}. We've emailed you an example.`)}
-    <button class="btn" data-go="account">Done</button>`; },
-
-  finder(code){ return `
-    <section class="block b-coral">
-      <h1>You found someone's keys</h1>
-      <p class="lede">Tell the owner where they are. They'll ${texts() ? 'get a text' : 'hear from us'} straight away.</p>
+    ${head('lime',[r.code ? `Tag ${esc(fmtCode(r.code))}` : 'Your tag'],'Your tag works',`If someone finds your keys, you'll ${texts() ? `get a text at ${esc(r.phone||'your mobile')}` : 'hear from us by email'}. We've emailed you an example.`)}
+    <section class="card">
+      <h2 class="card-h">Your tags</h2>
+      <p class="muted">Name your tags, update your number, or gift a tag to someone else.</p>
+      <div class="row" style="gap:10px"><button class="btn" data-go="account">Manage my tags</button><button class="btn ghost" data-go="register">Add another tag</button></div>
     </section>
-    <form id="findForm" class="card" data-code="${esc(code)}">
-      <div class="choices" role="group" aria-label="Quick answers">
-        <button type="button" class="choice" data-chip="I've handed them in at ">Handed them in</button>
-        ${texts() ? '<button type="button" class="choice" data-chip="I still have them. Text me to arrange getting them back." data-keep="1">I still have them</button>' : ''}
-      </div>
-      <label for="fMsg">Where are they?<textarea id="fMsg" required maxlength="160" placeholder="Behind the counter at the café on Old Street"></textarea></label>
-      <p id="fCount" class="muted" style="font-size:12px;text-align:right;margin-top:-10px">0 / 160</p>
-      <div class="contact-opt"${texts() ? '' : ' hidden'}>
-        <label class="switch-row" for="fAllow">
-          <input type="checkbox" id="fAllow">
-          <span class="switch" aria-hidden="true"></span>
-          <span class="switch-text"><b>Let the owner contact me</b><span class="small muted" id="allowHint">They can text you back through Keytag. They never see your number.</span></span>
-        </label>
-        <div id="phoneWrap" hidden>
-          <label for="fPhone">Your mobile<input id="fPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07..."></label>
-        </div>
-      </div>
-      <p id="findErr" class="err" hidden></p>
-      <button class="btn" type="submit">Send</button>
-    </form>
-    <p class="muted small center">Your tag? <button class="link" data-go="login">Log in to test it</button></p>`; },
+    ${scanBuy('One for every set of keys')}`; },
 
   sent(canReply){ return `
     ${head('lime',[],'Sent. Thank you!', canReply ? 'If the owner replies, you’ll get a text from Keytag.' : 'The owner has your message. That’s all you need to do.')}
@@ -408,12 +505,19 @@ const views = {
 /* ---------- routing ---------- */
 const PATHS = { register:'/register', home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
 let current = { view:'home' };
+const SCAN_VIEWS = ['scanStart','scanFound','scanSetup'];
 
 async function go(view, arg, { push = true } = {}){
   if (view === 'account') view = session ? 'dashboard' : 'login';
   current = { view, arg };
-  const path = view === 'enter' ? (arg === 'found' ? '/found' : '/setup') : PATHS[view];
-  if (push && path && location.pathname !== path) history.pushState({ view, arg }, '', path);
+  const path = view === 'enter' ? (arg === 'found' ? '/found' : '/setup')
+    : SCAN_VIEWS.includes(view) ? (typeof arg === 'string' && arg ? `/scan/${fmtCode(arg)}` : '/scan')
+    : PATHS[view];
+  if (path && location.pathname !== path) {
+    if (/^\/t\//i.test(location.pathname)) history.replaceState({ view, arg }, '', path);   // QR links: show the /scan address
+    else if (push) history.pushState({ view, arg }, '', path);
+  }
+  document.body.classList.toggle('focus', SCAN_VIEWS.includes(view) || view === 'unregFound' || view === 'yourTag');
   const out = views[view](arg);
   if (out instanceof Promise) app.innerHTML = '<div class="wrap"><div class="view page"><section class="card"><p class="muted">Loading…</p></section></div></div>';
   const html = await out;
@@ -432,9 +536,9 @@ async function scanFlow(rawCode){
   let r;
   try { r = await api(`/api/scan?code=${code}`); } catch(e){ return go('problem', e.message); }
   if (r.status === 'unknown') return go('unknownTag', code);
-  if (r.status === 'registered') return go('finder', code);
-  if (r.status === 'yours') return go('yourTag', r);
-  return go(session ? 'addTag' : 'newTag', code);
+  if (r.status === 'registered') return go('scanFound', code);
+  if (r.status === 'yours') return go('yourTag', { ...r, code });
+  return go(session ? 'addTag' : 'scanSetup', code);
 }
 
 /* Register step 1: check the code, then show the details form (or the right message). */
@@ -454,6 +558,8 @@ async function route({ push = false } = {}){
   const p = location.pathname;
   const t = p.match(/^\/t\/([A-Za-z0-9-]{6,7})(?:\/[A-Za-z0-9]*)?\/?$/i);
   if (t) return scanFlow(t[1]);
+  const sc = p.match(/^\/scan(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
+  if (sc) return sc[1] ? scanFlow(sc[1]) : go('scanStart', null, { push });
   const reg = p.match(/^\/register(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
   if (reg) return reg[1] ? registerCode(reg[1]) : go('register', null, { push });
   if (/^\/found\/?$/i.test(p)) return go('enter', 'found', { push });
