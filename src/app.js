@@ -57,7 +57,7 @@ const views = {
       <h2>How it works</h2>
       <ol class="how-steps">
         <li><div class="how-art" aria-hidden="true">${ART.clip}</div><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
-        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your mobile.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your contact details.</p></li>
         <li><div class="how-art" aria-hidden="true">${ART.text}</div><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></li>
       </ol>
       <div class="panel priv-strip">
