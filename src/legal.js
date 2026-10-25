@@ -51,11 +51,9 @@ Object.assign(views, {
     <h2>Who we share it with</h2>
     <p>Only the services that run Keytag for us, under contracts that require them to protect it:</p>
     <ul>
-      <li><b>Supabase</b>: our database and login (stored in the UK/EU).</li>
-      <li><b>Twilio</b>: sends and receives the text messages.</li>
-      <li><b>Resend</b>: sends our emails.</li>
-      <li><b>Vercel</b>: hosts the website.</li>
-      <li><b>Shopify</b>: runs our shop and orders.</li>
+      <li>Hosting, database and login providers.</li>
+      <li>Text message and email providers.</li>
+      <li>Our shop and payment provider.</li>
     </ul>
     <p>Some of these companies are based in the US. Where information leaves the UK, it is protected by the UK's approved safeguards, such as the International Data Transfer Addendum or the UK–US data bridge. We may also share information if the law requires it.</p>
 
@@ -87,9 +85,6 @@ Object.assign(views, {
       <li>The Keytag service: when someone finds your keys and scans the tag, we pass their message to you by text and email. If they leave a number, you can reply through Keytag, and neither of you sees the other's number.</li>
       <li>No subscription. The price you pay at checkout covers the tag and the service.</li>
     </ul>
-
-    <h2>How long the service runs</h2>
-    <p>We intend to run the service for as long as Keytag operates. If we ever have to close it, we'll give owners at least 6 months' notice by email.</p>
 
     <h2>What we can't promise</h2>
     <p>Keytag helps lost keys get home, but it depends on someone finding them and choosing to scan the tag. We can't guarantee your keys will be returned, or how quickly. We also rely on phone networks and email providers to deliver messages. Please keep your mobile number up to date in your account.</p>
