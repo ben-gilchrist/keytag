@@ -47,7 +47,7 @@ const views = {
       <div class="in hero-grid">
         <div class="stack hero-copy">
           <h1>The keyring tag that helps lost keys get home.</h1>
-          <p class="lede">Lose your keys.<br>Get a text when someone finds them.</p>
+          <p class="lede">Lose your keys. Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
       </div>
@@ -56,9 +56,9 @@ const views = {
     <section class="card how">
       <h2>How it works</h2>
       <ol class="how-steps">
-        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
-        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your mobile.</p></li>
-        <li><div class="how-art" aria-hidden="true">${ART.text}</div><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><div class="how-text"><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></div></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><div class="how-text"><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your mobile.</p></div></li>
+        <li><div class="how-art" aria-hidden="true">${ART.text}</div><div class="how-text"><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></div></li>
       </ol>
       <div class="panel priv-strip">
         <span class="shield" aria-hidden="true"></span>
@@ -68,10 +68,10 @@ const views = {
     </section>
     </div>
     <div class="wrap section">
-    <ul class="usps" aria-label="Why Keytag">
-      <li class="block b-sun"><span class="usp-ic" aria-hidden="true">${ICON.battery}</span><h3>No battery</h3><p>Nothing to charge or run out</p></li>
-      <li class="block b-violet"><span class="usp-ic" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p>Any camera phone can scan it</p></li>
-      <li class="block b-coral"><span class="usp-ic" aria-hidden="true">${ICON.sub}</span><h3>No subscription</h3><p>Pay once, keep it for life</p></li>
+    <ul class="perks" aria-label="Why Keytag">
+      <li><span class="perk-dot b-sun" aria-hidden="true">${ICON.battery}</span><h3>No battery</h3><p class="muted">Nothing to charge or run out</p></li>
+      <li><span class="perk-dot b-violet" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p class="muted">Any camera phone can scan it</p></li>
+      <li><span class="perk-dot b-coral" aria-hidden="true">${ICON.sub}</span><h3>No subscription</h3><p class="muted">Pay once, keep it for life</p></li>
     </ul>
     </div>
     <div class="wrap section">

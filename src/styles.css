@@ -464,3 +464,37 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
   .hero-photo .hero-copy{max-width:min(620px,48vw)}
   .hero-photo .hero-copy h1{font-size:clamp(48px,5.6vw,96px)}
 }
+
+/* hero: text vertically centred; tagline on one line where it fits */
+@media (min-width:900px){
+  .hero-photo{justify-content:center}
+  .hero-photo .hero-copy .lede{white-space:nowrap}
+}
+/* how it works: zig-zag rows instead of three columns */
+.how-steps li{padding:12px}
+.how-text{display:flex;flex-direction:column;gap:6px;padding:14px 10px 10px;position:relative}
+.how-text .how-n{position:static;margin-bottom:6px}
+.how-steps li .how-text h3,.how-steps li .how-text p{padding-inline:0}
+@media (min-width:900px){
+  .how-steps{grid-template-columns:1fr;gap:16px}
+  .how-steps li{display:grid;grid-template-columns:minmax(260px,38%) 1fr;align-items:center;gap:40px;padding:14px}
+  .how-steps li:nth-child(2){grid-template-columns:1fr minmax(260px,38%)}
+  .how-steps li:nth-child(2) .how-art{order:2}
+  .how-steps li:nth-child(2) .how-text{padding-left:40px}
+  .how-text{padding:0 24px 0 0}
+  .how-steps li .how-text h3{font-size:40px;margin:0}
+  .how-steps li .how-text p{font-size:18px;max-width:38ch}
+  .how-art{aspect-ratio:16/9}
+  .how-art svg{width:46%}
+}
+/* selling points: small coloured circles, centred text, no boxes */
+.perks{list-style:none;margin:0;padding:28px 0 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center}
+.perks li{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.perk-dot{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;margin-bottom:8px;--block-paper:#ffffff}
+.perk-dot svg{width:36px;height:36px;fill:none;stroke:#141414;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.perk-dot.b-violet svg{stroke:#ffffff}
+.perk-dot .cut{stroke-width:5.5}
+.perk-dot.b-sun .cut{stroke:var(--sun)} .perk-dot.b-violet .cut{stroke:var(--violet)} .perk-dot.b-coral .cut{stroke:var(--coral)}
+.perks h3{font-size:clamp(24px,2.4vw,34px)}
+.perks p{font-size:15px;max-width:22ch}
+@media (max-width:560px){.perks{gap:10px;padding-top:20px}.perk-dot{width:64px;height:64px;margin-bottom:4px}.perk-dot svg{width:28px;height:28px}.perks h3{font-size:18px}.perks p{font-size:12.5px;line-height:1.35}}
