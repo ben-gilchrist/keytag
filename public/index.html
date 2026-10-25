@@ -486,23 +486,6 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
   .hero-photo{justify-content:center}
   .hero-photo .hero-copy .lede{white-space:nowrap}
 }
-/* how it works: zig-zag rows instead of three columns */
-.how-steps li{padding:12px}
-.how-text{display:flex;flex-direction:column;gap:6px;padding:14px 10px 10px;position:relative}
-.how-text .how-n{position:static;margin-bottom:6px}
-.how-steps li .how-text h3,.how-steps li .how-text p{padding-inline:0}
-@media (min-width:900px){
-  .how-steps{grid-template-columns:1fr;gap:16px}
-  .how-steps li{display:grid;grid-template-columns:minmax(260px,38%) 1fr;align-items:center;gap:40px;padding:14px}
-  .how-steps li:nth-child(2){grid-template-columns:1fr minmax(260px,38%)}
-  .how-steps li:nth-child(2) .how-art{order:2}
-  .how-steps li:nth-child(2) .how-text{padding-left:40px}
-  .how-text{padding:0 24px 0 0}
-  .how-steps li .how-text h3{font-size:40px;margin:0}
-  .how-steps li .how-text p{font-size:18px;max-width:38ch}
-  .how-art{aspect-ratio:16/9}
-  .how-art svg{width:46%}
-}
 /* selling points: small coloured circles, centred text, no boxes */
 .perks{list-style:none;margin:0;padding:28px 0 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center}
 .perks li{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
@@ -687,9 +670,9 @@ const views = {
     <section class="card how">
       <h2>How it works</h2>
       <ol class="how-steps">
-        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><div class="how-text"><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></div></li>
-        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><div class="how-text"><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your mobile.</p></div></li>
-        <li><div class="how-art" aria-hidden="true">${ART.text}</div><div class="how-text"><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></div></li>
+        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><span class="how-n" aria-hidden="true">2</span><h3>Add your number</h3><p class="muted">Scan it once with your phone camera and add your mobile.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.text}</div><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></li>
       </ol>
       <div class="panel priv-strip">
         <span class="shield" aria-hidden="true"></span>
