@@ -21,7 +21,8 @@ img{max-width:100%}
 <div class="wrap">
   <header class="site">
     <button class="logo" data-go="home" aria-label="Keytag home"><i></i>Keytag</button>
-    <nav class="row" style="gap:6px">
+    <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="siteNav"><i></i><i></i><i></i></button>
+    <nav class="row" id="siteNav" style="gap:6px">
       <button class="btn ghost sm" id="accountBtn" data-go="account">Log in</button>
       <button class="btn ghost sm hide-sm" data-go="enter" data-arg="found">Found keys</button>
       <button class="btn ghost sm hide-sm" data-go="register">Register Keytag</button>

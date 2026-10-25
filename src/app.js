@@ -615,8 +615,17 @@ document.addEventListener('click', e=>{
     else go('checkoutSoon');
     return; }
   const s = e.target.closest('[data-scan]'); if(s){ scanFlow(s.dataset.scan); return; }
-  const g = e.target.closest('[data-go]'); if(g){ go(g.dataset.go, g.dataset.arg); }
+  const bu = e.target.closest('.burger'); if(bu){ toggleMenu(); return; }
+  const g = e.target.closest('[data-go]'); if(g){ toggleMenu(false); go(g.dataset.go, g.dataset.arg); return; }
+  if(!e.target.closest('header.site')) toggleMenu(false);
 });
+function toggleMenu(open){
+  const h = document.querySelector('header.site'); if(!h) return;
+  open = open ?? !h.classList.contains('open');
+  h.classList.toggle('open', open);
+  h.querySelector('.burger')?.setAttribute('aria-expanded', open);
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
 window.addEventListener('popstate', ()=>route());
 
 /* ---------- start ---------- */

@@ -525,3 +525,21 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
 .hero-copy h1{margin-bottom:-.04em}
 .hero-copy .lede{margin-bottom:6px}
 @media (max-width:899px){.hero-copy .lede{margin-bottom:1px}}
+
+/* mobile: taller header photo so the whole keyring shows */
+@media (max-width:899px){.hero-photo .hero-img img{height:min(76vw,600px);object-position:50% 50%}}
+
+/* burger menu (mobile) */
+.burger{display:none;width:44px;height:44px;border:0;background:none;padding:0;cursor:pointer;flex-direction:column;justify-content:center;align-items:center;gap:5px;color:var(--ink)}
+.burger i{display:block;width:24px;height:2.5px;border-radius:2px;background:currentColor;transition:transform .2s,opacity .2s}
+header.site.open .burger i:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+header.site.open .burger i:nth-child(2){opacity:0}
+header.site.open .burger i:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+@media (max-width:899px){
+  header.site{position:relative;padding-block:12px}
+  .burger{display:flex;margin-right:-10px}
+  header.site nav{display:none}
+  header.site.open nav{display:flex;flex-direction:column;align-items:stretch;gap:0;position:absolute;top:100%;left:calc(50% - 50vw);width:100vw;box-sizing:border-box;z-index:60;background:var(--bg);padding:4px 16px 20px;border-bottom:1px solid var(--line);box-shadow:0 18px 30px -18px rgba(0,0,0,.25)}
+  header.site.open nav .btn{display:block;width:100%;text-align:left;padding:18px 4px;font-size:15px;border-radius:0;border-bottom:1px solid var(--line);background:none;color:var(--ink)}
+  header.site.open nav .btn:not(.ghost){order:5;margin-top:16px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);text-align:center;padding:18px}
+}
