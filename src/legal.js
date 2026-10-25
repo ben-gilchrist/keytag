@@ -1,8 +1,8 @@
-/* Privacy policy and terms. Edit the COMPANY details before launch. */
+/* Privacy policy and terms. Company details are used on both pages. */
 const COMPANY = {
-  name: '[Company name] Ltd',            // TODO: legal name of the business that runs Keytag
-  number: '[company number]',            // TODO: Companies House number
-  address: '[registered address]',       // TODO
+  name: 'Studio Gilchrist Ltd',          // legal name of the business that runs Keytag
+  number: '10991066',
+  address: 'Unit One, Church Farm, Church Street, Seal, Sevenoaks, England, TN15 0AT',
   ico: '[ICO registration number]',      // TODO: after paying the ICO data protection fee
   email: 'hello@keytag.co.uk',
   updated: '24 October 2026'
@@ -15,7 +15,7 @@ const legalPage = (tone, title, intro, body) => `
 Object.assign(views, {
   privacy(){ return legalPage('sky', 'Privacy policy', 'We keep as little as possible: your name, email and mobile. Finders never see your details.', `
     <h2>Who we are</h2>
-    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Our ICO registration number is ${COMPANY.ico}. Contact us at <b>${COMPANY.email}</b>.</p>
+    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Contact us at <b>${COMPANY.email}</b>.</p>
 
     <h2>What we collect</h2>
     <h3>If you own a Keytag</h3>

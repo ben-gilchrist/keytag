@@ -498,6 +498,10 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
 .perks p{font-size:15px;max-width:22ch}
 @media (max-width:560px){.perks{gap:10px;padding-top:20px}.perk-dot{width:64px;height:64px;margin-bottom:4px}.perk-dot svg{width:28px;height:28px}.perks h3{font-size:18px}.perks p{font-size:12.5px;line-height:1.35}}
 @media (max-width:899px){.hero-photo .hero-img img{height:min(62vw,280px);object-fit:cover;object-position:50% 55%}.hero-photo .in{padding-block:22px 30px}.hero-copy{gap:16px}}
+/* selling points: tighter group in the middle */
+.perks{max-width:760px;margin-inline:auto;gap:12px}
+@media (min-width:900px){.perks{gap:16px}}
+.perks p{max-width:none}
 
 </style>
 </head>
@@ -1018,11 +1022,11 @@ const views = {
     </section>`; }
 };
 
-/* Privacy policy and terms. Edit the COMPANY details before launch. */
+/* Privacy policy and terms. Company details are used on both pages. */
 const COMPANY = {
-  name: '[Company name] Ltd',            // TODO: legal name of the business that runs Keytag
-  number: '[company number]',            // TODO: Companies House number
-  address: '[registered address]',       // TODO
+  name: 'Studio Gilchrist Ltd',          // legal name of the business that runs Keytag
+  number: '10991066',
+  address: 'Unit One, Church Farm, Church Street, Seal, Sevenoaks, England, TN15 0AT',
   ico: '[ICO registration number]',      // TODO: after paying the ICO data protection fee
   email: 'hello@keytag.co.uk',
   updated: '24 October 2026'
@@ -1035,7 +1039,7 @@ const legalPage = (tone, title, intro, body) => `
 Object.assign(views, {
   privacy(){ return legalPage('sky', 'Privacy policy', 'We keep as little as possible: your name, email and mobile. Finders never see your details.', `
     <h2>Who we are</h2>
-    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Our ICO registration number is ${COMPANY.ico}. Contact us at <b>${COMPANY.email}</b>.</p>
+    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Contact us at <b>${COMPANY.email}</b>.</p>
 
     <h2>What we collect</h2>
     <h3>If you own a Keytag</h3>
