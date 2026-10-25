@@ -46,7 +46,7 @@ const views = {
       </picture>
       <div class="in hero-grid">
         <div class="stack hero-copy">
-          <h1>The keyring tag that helps lost keys get home.</h1>
+          <h1>The keyring that helps lost keys get home.</h1>
           <p class="lede">Lose your keys. Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
@@ -88,7 +88,7 @@ const views = {
     </div>
     <section class="block bleed b-violet signup">
       <div class="in signup-grid">
-        <div class="stack" style="gap:10px"><h2>Be first in line</h2><p class="lede">Get launch news and early access to new finishes. No spam.</p></div>
+        <div class="stack" style="gap:10px"><h2>Be first in line</h2><p class="lede">Hear first about new Keytag products, colours and launches. No spam.</p></div>
         <form id="signupForm" class="signup-form">
           <label for="suEmail" class="sr">Email</label>
           <input id="suEmail" type="email" required autocomplete="email" placeholder="Your email">
@@ -107,7 +107,7 @@ const views = {
     </form>`; },
 
   buy(){ return `
-    ${head('sun',[],'Get a Keytag','The more you buy, the less you pay. Pay once, free UK delivery, no subscription.')}
+    ${head('sun',[],'Get your Keytags','The more you buy, the less you pay. Pay once, free UK delivery, no subscription.')}
     <section class="card compact">${pricing(qty())}</section>`; },
 
   checkoutSoon(){ return `

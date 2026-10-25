@@ -503,6 +503,40 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
 @media (min-width:900px){.perks{gap:16px}}
 .perks p{max-width:none}
 
+/* selling points: equal breathing space above and below */
+.perks{padding:56px 0}
+@media (max-width:560px){.perks{padding:36px 0}}
+
+/* price cards: no bars; each tier shows how many tags with little tag icons */
+.ladder .step{padding-bottom:20px}
+@media (min-width:900px){.ladder .step{padding:24px}.compact .ladder .step{padding:18px}}
+.tier-head{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.tier-tags{display:flex;align-items:center;padding-left:6px}
+.mini{width:30px;height:30px;border-radius:50%;margin-left:-8px;background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--bg) 0 3px,transparent 3.5px),
+  #3a3d40;box-shadow:0 0 0 2.5px var(--bg),0 2px 4px rgba(0,0,0,.2)}
+.mini-plus{margin-left:6px;font:700 20px var(--display);font-stretch:62%;line-height:1}
+.tier-name{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:clamp(20px,3.2cqi,30px);line-height:1;text-transform:uppercase}
+.ladder .step.on .mini{box-shadow:0 0 0 2.5px var(--violet),0 2px 4px rgba(0,0,0,.25);background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--violet) 0 3px,transparent 3.5px),#141414}
+@media (max-width:560px){
+  .ladder .step{padding:14px 16px}
+  .tier-head{flex-direction:row;align-items:center;gap:10px}
+  .mini{width:22px;height:22px;margin-left:-6px}
+  .tier-name{font-size:18px}
+}
+
+/* footer: black with light text */
+.site-foot{background:#141414;color:#f4f4f2;margin-top:0}
+.site-foot .muted,.site-foot .label{color:#f4f4f2;opacity:.65}
+.site-foot .link,.site-foot .logo{color:#f4f4f2}
+.site-foot .logo i{border-color:#f4f4f2}
+.site-foot .logo i::after{background:#f4f4f2}
+.site-foot .foot-base{border-top-color:rgba(255,255,255,.14)}
+.site-foot button:focus-visible{outline-color:#c8dd7b}
+
 </style>
 </head>
 <body>
@@ -549,11 +583,10 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
     ${TIERS.map((t,i)=>{ const nx=TIERS[i+1]; const on = n>=t.min && (!nx || n<nx.min); const save = TIERS[0].each - t.each; return `
     <div class="step${on?' on':''}${nx?'':' best'}" style="--h:${(t.each/TIERS[0].each).toFixed(3)}">
       <span class="best-badge${nx?' ph':''}" ${nx?'aria-hidden="true"':''}>Best value</span>
-      <span class="label">${tierLabel(i)}</span>
+      <span class="tier-head"><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat([1,3,5][i] || 1)}${nx ? '' : '<b class="mini-plus">+</b>'}</span><span class="tier-name">${tierLabel(i)}</span></span>
       <span class="yours${on?'':' ph'}" ${on?'':'aria-hidden="true"'}>Your price</span>
       <span class="step-price"><span class="disp">£${t.each}</span><span class="small">each</span></span>
       <span class="pill${save?' on':''}">${save ? `Save £${save} a tag` : 'Full price'}</span>
-      <span class="step-bar" aria-hidden="true"></span>
     </div>`; }).join('')}
   </div>
   <div class="calc">
@@ -665,7 +698,7 @@ const views = {
       </picture>
       <div class="in hero-grid">
         <div class="stack hero-copy">
-          <h1>The keyring tag that helps lost keys get home.</h1>
+          <h1>The keyring that helps lost keys get home.</h1>
           <p class="lede">Lose your keys. Get a text when someone finds them.</p>
           <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
         </div>
@@ -707,7 +740,7 @@ const views = {
     </div>
     <section class="block bleed b-violet signup">
       <div class="in signup-grid">
-        <div class="stack" style="gap:10px"><h2>Be first in line</h2><p class="lede">Get launch news and early access to new finishes. No spam.</p></div>
+        <div class="stack" style="gap:10px"><h2>Be first in line</h2><p class="lede">Hear first about new Keytag products, colours and launches. No spam.</p></div>
         <form id="signupForm" class="signup-form">
           <label for="suEmail" class="sr">Email</label>
           <input id="suEmail" type="email" required autocomplete="email" placeholder="Your email">
@@ -726,7 +759,7 @@ const views = {
     </form>`; },
 
   buy(){ return `
-    ${head('sun',[],'Get a Keytag','The more you buy, the less you pay. Pay once, free UK delivery, no subscription.')}
+    ${head('sun',[],'Get your Keytags','The more you buy, the less you pay. Pay once, free UK delivery, no subscription.')}
     <section class="card compact">${pricing(qty())}</section>`; },
 
   checkoutSoon(){ return `

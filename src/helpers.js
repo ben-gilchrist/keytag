@@ -6,11 +6,10 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
     ${TIERS.map((t,i)=>{ const nx=TIERS[i+1]; const on = n>=t.min && (!nx || n<nx.min); const save = TIERS[0].each - t.each; return `
     <div class="step${on?' on':''}${nx?'':' best'}" style="--h:${(t.each/TIERS[0].each).toFixed(3)}">
       <span class="best-badge${nx?' ph':''}" ${nx?'aria-hidden="true"':''}>Best value</span>
-      <span class="label">${tierLabel(i)}</span>
+      <span class="tier-head"><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat([1,3,5][i] || 1)}${nx ? '' : '<b class="mini-plus">+</b>'}</span><span class="tier-name">${tierLabel(i)}</span></span>
       <span class="yours${on?'':' ph'}" ${on?'':'aria-hidden="true"'}>Your price</span>
       <span class="step-price"><span class="disp">£${t.each}</span><span class="small">each</span></span>
       <span class="pill${save?' on':''}">${save ? `Save £${save} a tag` : 'Full price'}</span>
-      <span class="step-bar" aria-hidden="true"></span>
     </div>`; }).join('')}
   </div>
   <div class="calc">

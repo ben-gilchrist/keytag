@@ -486,3 +486,37 @@ th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;col
 .perks{max-width:760px;margin-inline:auto;gap:12px}
 @media (min-width:900px){.perks{gap:16px}}
 .perks p{max-width:none}
+
+/* selling points: equal breathing space above and below */
+.perks{padding:56px 0}
+@media (max-width:560px){.perks{padding:36px 0}}
+
+/* price cards: no bars; each tier shows how many tags with little tag icons */
+.ladder .step{padding-bottom:20px}
+@media (min-width:900px){.ladder .step{padding:24px}.compact .ladder .step{padding:18px}}
+.tier-head{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.tier-tags{display:flex;align-items:center;padding-left:6px}
+.mini{width:30px;height:30px;border-radius:50%;margin-left:-8px;background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--bg) 0 3px,transparent 3.5px),
+  #3a3d40;box-shadow:0 0 0 2.5px var(--bg),0 2px 4px rgba(0,0,0,.2)}
+.mini-plus{margin-left:6px;font:700 20px var(--display);font-stretch:62%;line-height:1}
+.tier-name{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:clamp(20px,3.2cqi,30px);line-height:1;text-transform:uppercase}
+.ladder .step.on .mini{box-shadow:0 0 0 2.5px var(--violet),0 2px 4px rgba(0,0,0,.25);background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--violet) 0 3px,transparent 3.5px),#141414}
+@media (max-width:560px){
+  .ladder .step{padding:14px 16px}
+  .tier-head{flex-direction:row;align-items:center;gap:10px}
+  .mini{width:22px;height:22px;margin-left:-6px}
+  .tier-name{font-size:18px}
+}
+
+/* footer: black with light text */
+.site-foot{background:#141414;color:#f4f4f2;margin-top:0}
+.site-foot .muted,.site-foot .label{color:#f4f4f2;opacity:.65}
+.site-foot .link,.site-foot .logo{color:#f4f4f2}
+.site-foot .logo i{border-color:#f4f4f2}
+.site-foot .logo i::after{background:#f4f4f2}
+.site-foot .foot-base{border-top-color:rgba(255,255,255,.14)}
+.site-foot button:focus-visible{outline-color:#c8dd7b}
