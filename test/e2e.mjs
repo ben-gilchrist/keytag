@@ -12,7 +12,7 @@ import { fakeDb } from './fake-db.js';
 process.env.SITE_URL = 'http://localhost:4321';
 process.env.SUPABASE_URL = 'https://fake.supabase.co';
 process.env.SUPABASE_ANON_KEY = 'anon';
-process.env.ADMIN_EMAILS = 'ben@keytag.co.uk';
+process.env.ADMIN_EMAILS = 'ben@keytag.club';
 
 const D = fakeDb({
   owners: [{ id: 'u-sam', name: 'Sam Example', email: 'sam@example.com', phone: '+447700900123' }],
@@ -178,7 +178,7 @@ check(true, 'checkout without a shop link shows "opening soon"');
 
 // 10. Admin
 await p.evaluate(() => localStorage.setItem('fake_session', JSON.stringify({ access_token: 'u-ben' })));
-users['u-ben'] = { id: 'u-ben', email: 'ben@keytag.co.uk', user_metadata: {} };
+users['u-ben'] = { id: 'u-ben', email: 'ben@keytag.club', user_metadata: {} };
 await p.goto('http://localhost:4321/admin'); await p.waitForSelector('text=Activity');
 check(!(await p.content()).includes('900999'), 'admin page never shows finder numbers');
 

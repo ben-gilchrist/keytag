@@ -9,7 +9,7 @@
 //   qr/CODE.svg    one vector QR per tag                    → send to the manufacturer
 //   import.sql     the same tags as SQL                      → or paste into Supabase SQL editor
 //
-// The QR link is all capitals (HTTPS://KEYTAG.CO.UK/T/CODE). Capitals let the QR use its
+// The QR link is all capitals (HTTPS://KEYTAG.CLUB/T/CODE). Capitals let the QR use its
 // compact mode, so the code is less dense and scans better when small or scratched.
 
 import fs from 'node:fs';
@@ -25,9 +25,9 @@ const args = Object.fromEntries(process.argv.slice(2).reduce((a, v, i, arr) => {
 
 const count = Number(args.count || 0);
 const batch = String(args.batch || '').padStart(3, '0');
-const domain = String(args.domain || 'KEYTAG.CO.UK').toUpperCase();
+const domain = String(args.domain || 'KEYTAG.CLUB').toUpperCase();
 if (!count || count < 1 || count > 100000 || !args.batch) {
-  console.error('Usage: npm run codes -- --count 500 --batch 001 [--insert] [--domain KEYTAG.CO.UK]');
+  console.error('Usage: npm run codes -- --count 500 --batch 001 [--insert] [--domain KEYTAG.CLUB]');
   process.exit(1);
 }
 

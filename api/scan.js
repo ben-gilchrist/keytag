@@ -1,5 +1,5 @@
 // GET /api/scan?code=ABC123
-// Called when someone opens keytag.co.uk/t/CODE (a QR scan) or types a code in.
+// Called when someone opens keytag.club/t/CODE (a QR scan) or types a code in.
 // Works out which page to show and logs the scan. Never reveals anything about the owner.
 
 import { db, currentUser, sendEmail, env } from '../lib/services.js';

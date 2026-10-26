@@ -4,7 +4,7 @@ const COMPANY = {
   number: '10991066',
   address: 'Unit One, Church Farm, Church Street, Seal, Sevenoaks, England, TN15 0AT',
   ico: '[ICO registration number]',      // TODO: after paying the ICO data protection fee
-  email: 'hello@keytag.co.uk',
+  email: 'hello@keytag.club',
   updated: '24 October 2026'
 };
 
@@ -77,7 +77,7 @@ Object.assign(views, {
 
   terms(){ return legalPage('sun', 'Terms', 'The short version: pay once, no subscription. We do our best to get your keys home, but we can’t promise every finder will scan.', `
     <h2>About these terms</h2>
-    <p>These terms cover buying Keytags and using the Keytag service at keytag.co.uk. Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. Contact us at <b>${COMPANY.email}</b>.</p>
+    <p>These terms cover buying Keytags and using the Keytag service at keytag.club. Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. Contact us at <b>${COMPANY.email}</b>.</p>
 
     <h2>What you get</h2>
     <ul>

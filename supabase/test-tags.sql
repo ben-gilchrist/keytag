@@ -1,5 +1,5 @@
 -- Test tags for trying the site before real tags are made.
--- Open in your browser:  https://keytag.co.uk/t/TEST01  (and so on)
+-- Open in your browser:  https://keytag.club/t/TEST01  (and so on)
 -- That's the same as scanning a brand-new tag's QR code.
 -- Delete them before launch:  delete from public.tags where batch = 'test';
 

@@ -17,14 +17,14 @@ import admin from '../api/admin.js';
 import signup from '../api/signup.js';
 import register from '../api/register.js';
 
-process.env.SITE_URL = 'https://keytag.co.uk';
-process.env.ADMIN_EMAILS = 'ben@keytag.co.uk';
+process.env.SITE_URL = 'https://keytag.club';
+process.env.ADMIN_EMAILS = 'ben@keytag.club';
 
 let D, texts, emails;
 const USERS = {
   sam: { id: 'u-sam', email: 'sam@example.com', user_metadata: { name: 'Sam Example', phone: '07700 900123' } },
   ana: { id: 'u-ana', email: 'ana@example.com', user_metadata: { name: 'Ana New', phone: '07700 900222' } },
-  ben: { id: 'u-ben', email: 'ben@keytag.co.uk', user_metadata: {} }
+  ben: { id: 'u-ben', email: 'ben@keytag.club', user_metadata: {} }
 };
 
 beforeEach(() => {
