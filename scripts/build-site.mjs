@@ -11,4 +11,5 @@ const html = read('shell.html')
 
 fs.mkdirSync(new URL('../public/', import.meta.url), { recursive: true });
 fs.writeFileSync(new URL('../public/index.html', import.meta.url), html);
+fs.writeFileSync(new URL('../public/404.html', import.meta.url), html);   // fallback: if the rewrite in vercel.json is ever skipped, every address still opens the site
 console.log(`Built public/index.html (${(html.length / 1024).toFixed(0)} KB)`);

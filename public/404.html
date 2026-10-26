@@ -1,0 +1,1582 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Keytag</title>
+<meta name="description" content="The keyring tag that helps lost keys get home. If someone finds your keys, they scan it and you get a text. No battery, no app, no subscription.">
+<meta name="theme-color" content="#b8dbfa">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='13' cy='16' r='8' fill='none' stroke='%23141414' stroke-width='5'/%3E%3Crect x='20' y='14' width='10' height='4' rx='2' fill='%23141414'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..800&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+/* Layout: phone-first stack of chunky colour blocks and black panels, condensed uppercase display type, black pill buttons */
+:root{
+  --bg:#e8e8e6; --surface:#ffffff; --ink:#141414; --muted:#626260; --line:#dadad7;
+  --panel:#141414; --on-panel:#f4f4f2; --tile:#ffffff; --tile-ink:#141414;
+  --sky:#b8dbfa; --sun:#f6c950; --violet:#6b4ff4; --coral:#ee5a4a; --lime:#c8dd7b;
+  --block-ink:#141414; --block-paper:#ffffff; --bad:#c4291b;
+  --display:"Archivo","Arial Narrow","Helvetica Neue",Arial,sans-serif;
+  --body:"Archivo",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e0e0e; --surface:#1c1c1c; --ink:#f2f2f0; --muted:#a2a29e; --line:#2e2e2c;
+  --panel:#232323; --on-panel:#f4f4f2; --tile:#333331; --tile-ink:#f4f4f2; --bad:#ff8a7e; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e0e0e; --surface:#1c1c1c; --ink:#f2f2f0; --muted:#a2a29e; --line:#2e2e2c;
+  --panel:#232323; --on-panel:#f4f4f2; --tile:#333331; --tile-ink:#f4f4f2; --bad:#ff8a7e; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body);margin:0;padding-block:0 110px}
+.wrap{width:100%;max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+@media (min-width:900px){.wrap{padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:max(40px,env(safe-area-inset-right,0px))}}
+.hide-sm{display:none}
+@media (min-width:700px){.hide-sm{display:inline-block}}
+
+/* full-bleed bands (home) */
+.block.bleed{border-radius:0;padding:0}
+.bleed .in{width:100%;max-width:1360px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 48px}
+@media (min-width:900px){.bleed .in{padding-left:max(40px,env(safe-area-inset-left,0px));padding-right:max(40px,env(safe-area-inset-right,0px));padding-block:96px 104px}}
+.hero-grid{display:grid;gap:32px;align-items:center}
+.hero-copy{gap:22px}
+.hero-copy h1{font-size:clamp(48px,6.4vw,108px);line-height:.88;margin-bottom:.12em}
+.hero-copy .lede{font-size:clamp(17px,1.5vw,21px);max-width:none;text-wrap:pretty}
+.hero-copy .btn{padding:20px 28px;font-size:14px}
+.hero-art{position:relative;display:grid;place-items:center;order:-1}
+.hero-art .tag{width:min(220px,55vw);margin:0}
+.hero-art .scribble{position:absolute;right:4%;top:0;width:110px;height:80px}
+@media (min-width:900px){
+  .hero-grid{grid-template-columns:1.25fr .75fr;gap:56px}
+  .hero-art{order:0}
+  .hero-art .tag{width:min(380px,30vw)}
+  .hero-art .scribble{width:150px;height:110px;right:-2%;top:-6%}
+}
+.view.home{display:flex;flex-direction:column;gap:0}
+.section{padding-top:16px}
+@media (min-width:900px){.section{padding-top:24px}}
+.two{display:grid;gap:16px}
+@media (min-width:900px){.two{grid-template-columns:1fr 1fr;gap:24px}.two > *{padding:40px}}
+
+/* inner pages: header block left, content right on desktop */
+@media (min-width:900px){
+  .view.page{display:grid;grid-template-columns:5fr 7fr;gap:24px;align-items:start}
+  .view.page > :first-child{grid-row:1 / span 20;position:sticky;top:24px;min-height:min(560px,70vh);justify-content:flex-end;padding:40px}
+  .view.page > :first-child h1{font-size:clamp(56px,6vw,96px)}
+  .view.page > :first-child .lede{font-size:18px}
+  .view.page > :not(:first-child){grid-column:2}
+  .view.page > .card, .view.page > form.card{padding:32px}
+}
+p{margin:0}
+
+/* type */
+h1,h2,h3,.disp{font-family:var(--display);font-stretch:62%;font-weight:700;text-transform:uppercase;letter-spacing:-.005em;text-wrap:balance;margin:0}
+h1{font-size:clamp(44px,12.5vw,68px);line-height:.9}
+h2{font-size:clamp(28px,7vw,36px);line-height:.95}
+h3{font-size:22px;line-height:1}
+.lede{font-size:16px;line-height:1.45;max-width:46ch}
+p,li,.lede,.small,label,.label,.use .small,.door .small{text-wrap:balance}
+.muted{color:var(--muted)}
+.small{font-size:14px}
+.center{text-align:center}
+.label{font:600 11px var(--body);letter-spacing:.07em;text-transform:uppercase}
+.code{font-family:var(--mono);letter-spacing:.06em}
+
+/* header */
+header.site{display:flex;justify-content:space-between;align-items:center;padding-block:18px 14px}
+.logo{font-family:var(--display);font-stretch:62%;font-weight:800;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.01em;display:flex;align-items:center;gap:8px;background:none;border:0;color:var(--ink);cursor:pointer;padding:0}
+.logo i{width:20px;height:20px;border-radius:50%;border:4px solid var(--ink);display:inline-block;position:relative}
+.logo i::after{content:"";position:absolute;right:-9px;top:4px;width:9px;height:4px;background:var(--ink);border-radius:2px}
+
+/* layout */
+.view{display:flex;flex-direction:column;gap:12px}
+.stack{display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.row.split{justify-content:space-between}
+.row > *{min-width:0}
+.gap-lg,.gap-md{margin:0}
+
+/* surfaces */
+.card{background:var(--surface);border-radius:26px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.block{border-radius:26px;padding:22px;display:flex;flex-direction:column;gap:14px;color:var(--block-ink)}
+.block .muted{color:var(--block-ink);opacity:.72}
+.b-sky{background:var(--sky)} .b-sun{background:var(--sun)} .b-lime{background:var(--lime)} .b-coral{background:var(--coral)}
+.b-violet{background:var(--violet);--block-ink:#ffffff}
+.panel{background:var(--panel);color:var(--on-panel);border-radius:26px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.panel .muted{color:var(--on-panel);opacity:.7}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip-tag{font:700 10.5px var(--body);letter-spacing:.06em;text-transform:uppercase;background:var(--block-ink);color:var(--surface);border-radius:99px;padding:4px 9px;align-self:flex-start}
+.b-violet .chip-tag{background:#ffffff;color:var(--violet)}
+.block .chip-tag{color:var(--block-paper)}
+.b-violet .chip-tag{color:var(--violet)}
+.card .chip-tag{background:var(--ink);color:var(--surface)}
+
+/* buttons */
+.btn{font:600 13px var(--body);letter-spacing:.07em;text-transform:uppercase;border-radius:14px;padding:17px 18px;border:0;background:var(--ink);color:var(--surface);cursor:pointer;text-align:center;line-height:1.1}
+.btn.ghost{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.btn.sm{padding:10px 14px;font-size:11.5px;border-radius:99px}
+.btn.danger{background:var(--bad);color:#fff}
+.btn:disabled{opacity:.35;cursor:default}
+header.site .btn.ghost{box-shadow:none}
+header.site .btn.ghost:hover{box-shadow:none;opacity:.6}
+header.site .btn:focus:not(:focus-visible){outline:none}
+.block .btn{background:var(--block-ink);color:var(--block-paper)}
+.b-violet .btn{background:#ffffff;color:var(--violet)}
+.block .btn.ghost{background:transparent;color:var(--block-ink);box-shadow:none;padding-block:8px}
+.panel .btn{background:var(--on-panel);color:var(--panel)}
+.link{background:none;border:0;padding:0;color:inherit;text-decoration:underline;text-underline-offset:3px;font:inherit;cursor:pointer}
+input:focus,textarea:focus,button:focus-visible,a:focus-visible{outline:2.5px solid var(--violet);outline-offset:2px}
+
+/* forms */
+label{font:600 11px var(--body);letter-spacing:.07em;text-transform:uppercase;display:flex;flex-direction:column;gap:7px}
+input,textarea{font:400 16px var(--body);letter-spacing:0;text-transform:none;color:var(--ink);background:var(--bg);border:0;border-radius:14px;padding:15px 16px;width:100%}
+textarea{min-height:100px;resize:vertical}
+input:disabled{opacity:.6}
+
+/* messages */
+.note{font-size:14px;background:var(--sun);color:var(--block-ink);border-radius:16px;padding:14px 16px}
+.ok{font:600 14px var(--body);background:var(--lime);color:var(--block-ink);border-radius:16px;padding:14px 16px}
+.err{color:var(--bad);font-size:14px}
+
+/* hero */
+.hero{padding-top:18px;gap:16px}
+.hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.hero-top .tag{margin:0}
+.hero .tag{width:120px}
+.circled{position:relative;display:inline-block;white-space:nowrap;margin-left:.12em;padding-inline:.04em}
+.circled svg{position:absolute;left:-9%;top:-12%;width:118%;height:124%;overflow:visible;pointer-events:none}
+.circled path{fill:none;stroke:var(--block-ink);stroke-width:2.2;stroke-linecap:round}
+.scribble{width:84px;height:60px;flex:0 0 auto}
+.scribble path{fill:none;stroke:var(--block-ink);stroke-width:2;stroke-linecap:round}
+
+/* selling-point blocks */
+.usps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.usps li{min-width:0;gap:10px;padding:18px}
+.usp-ic{width:46px;height:46px;border-radius:50%;background:var(--block-paper);color:var(--block-ink);display:grid;place-items:center}
+.b-violet .usp-ic{color:var(--violet)}
+.usp-ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.usp-ic .cut{stroke:var(--block-paper);stroke-width:5.5}
+.usps h3{font-size:26px;line-height:.92}
+.usps p{font-size:13.5px;line-height:1.35}
+@media (min-width:900px){
+  .usps{gap:24px}
+  .usps li{padding:36px 32px 32px;gap:14px;min-height:280px;justify-content:flex-end}
+  .usps .usp-ic{width:64px;height:64px;margin-bottom:auto}
+  .usps .usp-ic svg{width:32px;height:32px}
+  .usps h3{font-size:clamp(36px,3.4vw,52px)}
+  .usps p{font-size:16px}
+  .doors{gap:24px}
+  .door{padding:32px 36px;min-height:160px;justify-content:flex-end}
+  .door .disp{font-size:clamp(36px,3.4vw,52px)}
+  .door .small{font-size:16px}
+  .two h2{font-size:clamp(36px,3.4vw,52px)}
+  .two .steps{gap:20px}
+  .two .steps li{font-size:18px}
+}
+@media (max-width:460px){
+  .usps{grid-template-columns:1fr}
+  .usps li{display:grid;grid-template-columns:auto 1fr;column-gap:14px;row-gap:2px;align-items:center}
+  .usps .usp-ic{grid-row:1 / span 2}
+  .usps h3{align-self:end}
+  .usps p{align-self:start}
+}
+
+/* stat tiles (privacy, prices) */
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{background:var(--tile);color:var(--tile-ink);border-radius:16px;padding:12px 12px 10px;display:flex;flex-direction:column;justify-content:space-between;gap:14px;min-height:96px;min-width:0}
+.tile .label{font-size:10px;line-height:1.25}
+.tile b{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:40px;line-height:.85;font-variant-numeric:tabular-nums}
+.card .tile{background:var(--bg);color:var(--ink)}
+.tile.on{background:var(--ink);color:var(--surface)}
+.privlist{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.privlist li{padding-left:30px;position:relative;font-size:15px;line-height:1.45}
+.privlist li b{font-weight:600}
+.privlist li::before{content:"";position:absolute;left:0;top:1px;width:20px;height:20px;border-radius:50%;background:var(--lime)}
+.privlist li::after{content:"";position:absolute;left:6px;top:7px;width:8px;height:4px;border-left:2px solid #141414;border-bottom:2px solid #141414;transform:rotate(-45deg)}
+.shield{flex:0 0 auto;width:30px;height:36px;background:var(--lime);clip-path:polygon(50% 0,100% 18%,100% 52%,50% 100%,0 52%,0 18%);position:relative}
+.shield::after{content:"";position:absolute;left:9px;top:12px;width:10px;height:5px;border-left:2.5px solid #141414;border-bottom:2.5px solid #141414;transform:rotate(-45deg)}
+
+/* numbered steps */
+.steps{display:grid;gap:14px;counter-reset:s;padding:0;margin:0;list-style:none}
+.steps li{display:grid;grid-template-columns:26px 1fr;gap:12px;align-items:start;line-height:1.4;padding-top:2px}
+.how{gap:20px}
+.how-steps{list-style:none;margin:0;padding:0;display:grid;gap:12px}
+.how-steps li{background:var(--bg);border-radius:22px;padding:12px 12px 22px;display:flex;flex-direction:column;gap:6px;position:relative;min-width:0}
+.how-steps li h3,.how-steps li p{padding-inline:10px}
+.how-steps li h3{margin-top:8px}
+.how-art{border-radius:16px;display:grid;place-items:center;aspect-ratio:16/10;background:var(--sky)}
+.how-steps li:nth-child(2) .how-art{background:var(--sun)}
+.how-steps li:nth-child(3) .how-art{background:var(--lime)}
+.how-art svg{width:62%;height:auto}
+.how-n{position:absolute;top:24px;left:24px;width:40px;height:40px;border-radius:50%;background:#141414;color:#fff;display:grid;place-items:center;font-family:var(--display);font-stretch:62%;font-weight:700;font-size:22px;line-height:1}
+.priv-strip{display:grid;grid-template-columns:auto 1fr;column-gap:16px;row-gap:4px;align-items:center;border-radius:22px;padding:20px 22px}
+.priv-strip .shield{grid-row:1 / span 2}
+@media (min-width:900px){
+  .how{padding:40px}
+  .how h2{font-size:clamp(36px,3.4vw,52px)}
+  .how-steps{grid-template-columns:repeat(3,1fr);gap:20px}
+  .how-steps li h3{font-size:30px}
+  .how-steps li p{font-size:16px;max-width:32ch}
+  .how-n{width:48px;height:48px;font-size:26px}
+  .priv-strip{grid-template-columns:auto auto 1fr;column-gap:24px;padding:24px 32px}
+  .priv-strip .shield{grid-row:auto}
+  .priv-strip h3{font-size:30px}
+  .priv-strip p{font-size:16px;justify-self:end;text-align:right;max-width:44ch}
+}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.promo{background:var(--panel);color:var(--on-panel);font:600 12px var(--body);letter-spacing:.05em;text-transform:uppercase;text-align:center;padding-block:9px}
+.promo .link{color:var(--on-panel)}
+.hero-ghost{box-shadow:inset 0 0 0 1.5px var(--block-ink)!important;padding:20px 26px!important}
+.sec-head{display:flex;flex-direction:column;gap:6px}
+.sec-head p{font-size:16px;max-width:52ch}
+.use-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.use{background:var(--bg);color:var(--ink);border:0;border-radius:20px;padding:12px 12px 18px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;font:inherit;cursor:pointer;min-width:0}
+.use > :not(.use-art){padding-inline:6px}
+.use-art{width:100%;aspect-ratio:4/3;border-radius:14px;display:grid;place-items:center;margin-bottom:6px}
+.use-art svg{width:42%;height:auto}
+.use .disp{font-size:24px;line-height:1}
+.use-cta{font:700 11.5px var(--body);letter-spacing:.07em;text-transform:uppercase;margin-top:6px}
+.use:hover{box-shadow:inset 0 0 0 2px var(--ink)}
+.plans{display:grid;gap:12px}
+.plan{position:relative;background:var(--bg);border-radius:22px;padding:24px;display:flex;flex-direction:column;gap:12px}
+.plan.hot{background:var(--panel);color:var(--on-panel)}
+.plan.hot .muted{color:var(--on-panel);opacity:.7}
+.plan.hot .btn{background:var(--lime);color:#141414}
+.plan-badge{position:absolute;top:20px;right:20px;font:700 10.5px var(--body);letter-spacing:.06em;text-transform:uppercase;background:var(--sun);color:#141414;border-radius:99px;padding:5px 10px}
+.plan.hot .plan-badge{background:var(--lime)}
+.plan-price{display:flex;align-items:baseline;gap:8px}
+.plan-price .disp{font-size:64px;line-height:.85}
+.plan-list{list-style:none;margin:0 0 6px;padding:0;display:grid;gap:8px;font-size:15px}
+.plan-list li{padding-left:24px;position:relative}
+.plan-list li::before{content:"";position:absolute;left:2px;top:6px;width:9px;height:5px;border-left:2px solid currentColor;border-bottom:2px solid currentColor;transform:rotate(-45deg)}
+.plan .btn{margin-top:auto}
+.signup{margin-top:24px}
+.signup-grid{display:grid;gap:20px;align-items:center}
+.signup-form{display:grid;grid-template-columns:1fr auto;gap:8px}
+.signup-form input{background:#fff;color:#141414}
+.signup-form p{grid-column:1 / -1}
+.site-foot{padding-block:48px 24px}
+.foot-grid{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.foot-grid > :first-child{grid-column:1 / -1}
+.foot-col{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.foot-col .link{text-decoration:none;font-size:14px}
+.foot-col .link:hover{text-decoration:underline}
+.foot-base{border-top:1px solid var(--line);padding-top:18px;margin-top:32px}
+body{padding-block:0}
+.view.page{padding-bottom:24px}
+@media (min-width:900px){
+  .uses,.packs-sec{padding:40px;gap:28px}
+  .uses h2,.packs-sec h2,.signup h2{font-size:clamp(36px,3.4vw,52px)}
+  .use-grid{grid-template-columns:repeat(4,1fr);gap:20px}
+  .use .disp{font-size:30px}
+  .plans{grid-template-columns:repeat(3,1fr);gap:20px}
+  .plan{padding:32px;min-height:440px}
+  .plan-price .disp{font-size:88px}
+  .signup{margin-top:24px}
+  .signup .in{padding-block:72px}
+  .signup-grid{grid-template-columns:1fr 1fr;gap:56px}
+  .foot-grid{grid-template-columns:2fr 1fr 1fr 1fr}
+  .foot-grid > :first-child{grid-column:auto}
+}
+.ladder{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;align-items:stretch}
+.step{background:var(--bg);border-radius:20px;padding:14px 14px 0;display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;overflow:hidden}
+.step-price{display:flex;align-items:baseline;gap:6px}
+.step-price .disp{font-size:44px;line-height:.85;font-variant-numeric:tabular-nums}
+.step .pill{font-size:9.5px;white-space:normal}
+.step .pill:not(.on){background:transparent;box-shadow:inset 0 0 0 1.5px var(--line)}
+@media (max-width:520px){
+  .ladder{gap:8px}
+  .step{padding:12px 10px 0;border-radius:16px}
+  .step-price .disp{font-size:34px}
+  .step-price .small{display:none}
+  .best-badge{position:static;align-self:flex-start;font-size:9px;padding:3px 7px}
+  .yours{display:block}
+}
+.step-bar{margin-top:auto;align-self:stretch;height:calc(var(--h) * 110px);border-radius:12px 12px 0 0;background:var(--sky);margin-inline:-2px}
+.step:nth-child(2) .step-bar{background:var(--sun)}
+.step:nth-child(3) .step-bar{background:var(--lime)}
+/* price ladder sizes itself to its own width, so it fits in the shop column and on phones */
+.pricing{display:flex;flex-direction:column;gap:16px}
+@media (min-width:900px){.pricing{gap:20px}}
+.ladder{container-type:inline-size}
+.ladder .step-price{flex-wrap:wrap;row-gap:0}
+.ladder .step-price .disp{font-size:clamp(28px,10cqi,96px)}
+.ladder .step .pill{white-space:nowrap;font-size:clamp(9px,1.45cqi,11px)}
+.ladder .best-badge{position:static;align-self:flex-start;white-space:nowrap;font-size:clamp(9px,1.45cqi,10.5px)}
+.yours{display:block;font:700 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--violet);white-space:nowrap;margin-top:-4px}
+/* phones: the ladder becomes rows, bars run sideways */
+@media (max-width:560px){
+  .ladder{grid-template-columns:1fr}
+  .ladder .step{display:grid;grid-template-columns:1fr auto;column-gap:12px;row-gap:6px;align-items:center;padding:14px 16px 0;border-radius:18px}
+  .ladder .step > :not(.step-price):not(.step-bar){grid-column:1}
+  .ladder .step-price{grid-column:2;grid-row:1 / span 4;flex-wrap:nowrap}
+  .ladder .step-price .disp{font-size:48px}
+  .ladder .step-price .small{display:inline}
+  .ladder .step .pill{font-size:10px;justify-self:start}
+  .ladder .best-badge{font-size:10px;justify-self:start}
+  .ladder .yours{margin-top:0}
+  .ladder .ph{display:none}
+  .ladder .step-bar{grid-column:1 / -1;height:8px;width:calc(var(--h) * 100%);margin:8px 0 0;border-radius:8px 8px 0 0}
+}
+.step{position:relative}
+.step.best{box-shadow:inset 0 0 0 3px var(--ink)}
+.best-badge{position:absolute;top:12px;right:12px;font:700 10px var(--body);letter-spacing:.06em;text-transform:uppercase;background:var(--ink);color:var(--surface);border-radius:99px;padding:4px 9px}
+.yours{color:var(--violet);white-space:nowrap}
+.calc{display:flex;flex-wrap:wrap;gap:18px 28px;align-items:flex-end;justify-content:space-between;background:var(--panel);color:var(--on-panel);border-radius:20px;padding:18px 20px}
+.calc .muted{color:var(--on-panel);opacity:.7}
+.calc .stepper{background:#ffffff}
+.calc .stepper .btn{background:#141414;color:#ffffff}
+.calc .stepper input{color:#141414}
+.calc .calc-btn{background:var(--lime);color:#141414}
+.calc-total{flex:1 1 160px}
+.contact-opt{background:var(--bg);border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:14px;box-shadow:inset 0 0 0 1.5px transparent;transition:box-shadow .15s}
+.contact-opt.on{box-shadow:inset 0 0 0 1.5px var(--ink)}
+.switch-row{flex-direction:row;align-items:center;gap:14px;text-transform:none;letter-spacing:0;font:400 15px var(--body);cursor:pointer;position:relative}
+.switch-row input{position:absolute;opacity:0;width:1px;height:1px}
+.switch{flex:0 0 auto;width:46px;height:28px;border-radius:99px;background:var(--line);position:relative;transition:background .15s}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .15s}
+.switch-row input:checked + .switch{background:var(--ink)}
+.switch-row input:checked + .switch::after{transform:translateX(18px)}
+.switch-row input:focus-visible + .switch{outline:2.5px solid var(--violet);outline-offset:2px}
+.switch-row input:disabled + .switch{opacity:.6}
+.switch-text{display:flex;flex-direction:column;gap:2px}
+.switch-text b{font-weight:600}
+.contact-opt input[type=tel]{background:var(--surface)}
+@media (prefers-reduced-motion:reduce){.switch,.switch::after,.contact-opt{transition:none}}
+.msgs{display:flex;flex-direction:column;gap:10px}
+.msg{background:var(--bg);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg > p:first-of-type{font-size:17px}
+.free-del{display:flex;align-items:center;gap:12px;background:transparent;color:var(--lime);padding:4px 0}
+.free-del svg{width:34px;height:34px;flex:0 0 auto;fill:none;stroke:var(--lime);stroke-width:1.6;stroke-linejoin:round}
+.free-del > span{display:flex;flex-direction:column;line-height:1.2}
+.free-del b{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:22px;text-transform:uppercase}
+.free-del > span > span{font-size:13px}
+.calc-btn{flex:1 1 100%}
+@media (min-width:900px){
+  .ladder{gap:20px}
+  .step{padding:24px 24px 0;gap:12px}
+  .step-price .disp{font-size:96px}
+  .step .pill{font-size:11px}
+  .step-bar{height:calc(var(--h) * 180px)}
+  .calc{padding:24px 28px;align-items:center}
+  .calc-btn{flex:0 0 auto;padding-inline:56px}
+  .compact .ladder{gap:10px}
+  .compact .step{padding:16px 16px 0}
+  .compact .best-badge{position:static;align-self:flex-start;margin-bottom:-2px}
+  .compact .step-price .disp{font-size:60px}
+  .compact .step-bar{height:calc(var(--h) * 120px)}
+  .compact .calc-btn{flex:1 1 100%}
+}
+.doors{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.door{background:var(--surface);color:var(--ink);border:0;border-radius:22px;padding:18px;display:flex;flex-direction:column;align-items:flex-start;gap:4px;cursor:pointer;text-align:left;font:inherit}
+.door .disp{font-size:26px;line-height:1}
+.door:hover{box-shadow:inset 0 0 0 2px var(--ink)}
+.door.b-sky{background:var(--sky)} .door.b-sun{background:var(--sun)}
+@media (min-width:900px){.doors .door{padding:32px 36px;min-height:180px;justify-content:flex-end}.doors .door .disp{font-size:clamp(36px,3.4vw,52px)}.doors .door .small{font-size:16px}}
+.ladder .ph{visibility:hidden}
+.door.b-sky,.door.b-sun{color:#141414}
+.door.b-sky .muted,.door.b-sun .muted{color:#141414;opacity:.7}
+.door.b-sky:hover,.door.b-sun:hover{box-shadow:inset 0 0 0 2px #141414}
+.steps li::before{counter-increment:s;content:counter(s);width:26px;height:26px;border-radius:50%;background:var(--ink);color:var(--surface);display:grid;place-items:center;font:700 12px var(--body);margin-top:1px}
+.block .steps li::before{background:var(--block-ink);color:var(--block-paper)}
+.steps b{font-weight:600}
+
+/* the tag */
+.tag{width:150px;aspect-ratio:1;max-width:100%;border-radius:50%;margin:4px auto 0;position:relative;
+  background:radial-gradient(circle at 32% 28%,#ffffff,#c7ccd0 68%,#8a9399);
+  box-shadow:0 10px 24px rgba(0,0,0,.18);display:grid;place-items:center}
+.tag.sm{width:92px}
+.tag::before{content:"";position:absolute;top:11%;left:50%;width:13%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:rgba(20,20,20,.55)}
+.qr{width:40%;aspect-ratio:1;display:grid;grid-template-columns:repeat(7,1fr);gap:1px;margin-top:10%}
+.qr span{background:#141414;opacity:.85;border-radius:1px}
+.qr span.o{background:transparent}
+.tag small{position:absolute;bottom:15%;font:500 10px var(--mono);letter-spacing:.1em;color:#141414;opacity:.75}
+.tag.sm small{font-size:7px}
+
+/* finder chips */
+.choices{display:flex;flex-wrap:wrap;gap:8px}
+.choice{font:600 12px var(--body);letter-spacing:.05em;text-transform:uppercase;border:0;box-shadow:inset 0 0 0 1.5px var(--line);background:transparent;color:var(--ink);border-radius:99px;padding:10px 14px;cursor:pointer}
+.choice[aria-pressed="true"]{background:var(--ink);color:var(--surface);box-shadow:none}
+
+/* shop */
+.stepper{display:flex;align-items:center;gap:4px;background:var(--bg);border-radius:99px;padding:4px}
+.stepper .btn{width:42px;height:42px;padding:0;font-size:20px;border-radius:50%;letter-spacing:0}
+.stepper input{width:52px;text-align:center;padding:8px 0;background:transparent;font-family:var(--display);font-stretch:62%;font-weight:700;font-size:28px;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.stepper input::-webkit-inner-spin-button,.stepper input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.total{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:56px;line-height:.85;font-variant-numeric:tabular-nums}
+
+/* dashboard */
+.tagrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 12px 12px 16px;background:var(--bg);border-radius:18px}
+.tagrow .disp{font-size:26px;line-height:1}
+.tagrows{display:flex;flex-direction:column;gap:8px}
+.more{position:relative}
+.more summary{list-style:none;display:inline-block}
+.more summary::-webkit-details-marker{display:none}
+.more .menu{position:absolute;right:0;top:calc(100% + 6px);z-index:3;background:var(--surface);border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.18);padding:6px;display:flex;flex-direction:column;min-width:170px}
+.more .menu button{background:none;border:0;text-align:left;padding:11px 12px;border-radius:10px;font:500 14px var(--body);color:var(--ink);cursor:pointer}
+.more .menu button:hover{background:var(--bg)}
+
+/* tables + pills */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:9px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:600 10.5px var(--body);letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+.tablebox{overflow-x:auto}
+.pill{font:700 10.5px var(--body);letter-spacing:.06em;text-transform:uppercase;padding:4px 9px;border-radius:99px;background:var(--bg);color:var(--ink);white-space:nowrap}
+.pill.on{background:var(--lime);color:#141414}
+.pill.warn{background:var(--sun);color:#141414}
+
+
+@media (prefers-reduced-motion:no-preference){.view > *{animation:rise .35s cubic-bezier(.2,.7,.2,1) both}.view > *:nth-child(2){animation-delay:.04s}.view > *:nth-child(3){animation-delay:.08s}.view > *:nth-child(4){animation-delay:.12s}
+@keyframes rise{from{opacity:.3;transform:translateY(8px)}to{opacity:1;transform:none}}}
+
+/* active price card: the tier you're paying fills violet */
+.ladder .step.on{background:var(--violet);color:#fff;box-shadow:0 0 0 3px var(--violet),0 10px 24px rgba(107,79,244,.28);transform:translateY(-4px)}
+.ladder .step.on.best{box-shadow:inset 0 0 0 3px #141414,0 0 0 3px var(--violet),0 10px 24px rgba(107,79,244,.28)}
+.ladder .step.on .yours{background:#fff;color:var(--violet);border-radius:99px;padding:4px 9px;align-self:flex-start;margin-top:0}
+.ladder .step.on .pill.on{background:#fff;color:#141414}
+.ladder .step.on .pill:not(.on){box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.6);color:#fff}
+.ladder .step.on .best-badge{background:#fff;color:#141414}
+.ladder .step.on .step-bar{background:rgba(255,255,255,.9)}
+.ladder .step{transition:transform .2s,background .2s,box-shadow .2s}
+@media (prefers-reduced-motion:reduce){.ladder .step{transition:none}.ladder .step.on{transform:none}}
+@media (max-width:560px){.ladder .step.on{transform:none}.ladder .step.on .yours{justify-self:start}}
+/* legal pages */
+.legal{gap:0;line-height:1.6}
+.legal h2{font-size:26px;margin:28px 0 10px}
+.legal h2:first-child{margin-top:0}
+.legal h3{font-size:18px;margin:18px 0 6px}
+.legal p{margin:0 0 12px;max-width:68ch;text-wrap:pretty}
+.legal ul{margin:0 0 12px;padding-left:20px;display:grid;gap:6px;max-width:68ch}
+.legal li{text-wrap:pretty}
+.legal-table{margin:4px 0 16px;font-size:14.5px}
+.legal-table th,.legal-table td{padding:10px 8px}
+@media (max-width:560px){.legal-table{display:block;overflow-x:auto}}
+/* inner pages: no empty row gaps under the sticky header block */
+@media (min-width:900px){
+  .view.page{row-gap:0;column-gap:24px}
+  .view.page > :not(:first-child){margin-bottom:24px}
+}
+@media (max-width:560px){.ladder .step.on{box-shadow:0 8px 18px rgba(107,79,244,.28)}.ladder .step.on.best{box-shadow:inset 0 0 0 3px #141414,0 8px 18px rgba(107,79,244,.28)}}
+
+.otp{font-size:24px;letter-spacing:.35em;text-align:center;max-width:260px}
+
+/* hero photo: full-bleed on desktop (keys on the right, text on the calm grey left); photo above text on phones */
+.hero-photo{--block-ink:#141414;background:#d9d9d7;position:relative;overflow:hidden;color:#141414}
+.hero-photo .hero-img img{display:block;width:100%;height:auto}
+.hero-photo .hero-grid{grid-template-columns:1fr}
+.hero-photo .in{padding-block:28px 40px}
+.hero-photo .hero-ghost{box-shadow:inset 0 0 0 1.5px #141414!important}
+@media (min-width:900px){
+  .hero-photo{min-height:clamp(440px,min(38vw,100vh - 280px),640px);display:flex;align-items:center}
+  .hero-photo .hero-img{position:absolute;inset:0}
+  .hero-photo .hero-img img{width:100%;height:100%;object-fit:cover;object-position:72% 50%}
+  .hero-photo .in{position:relative;padding-block:48px}
+  .hero-photo .hero-copy{max-width:min(620px,48vw)}
+  .hero-photo .hero-copy h1{font-size:clamp(48px,5.6vw,96px)}
+}
+
+/* hero: text vertically centred; tagline on one line where it fits */
+@media (min-width:900px){
+  .hero-photo{justify-content:center}
+  .hero-photo .hero-copy .lede{white-space:nowrap}
+}
+/* selling points: small coloured circles, centred text, no boxes */
+.perks{list-style:none;margin:0;padding:28px 0 8px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;text-align:center}
+.perks li{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:0}
+.perk-dot{width:88px;height:88px;border-radius:50%;display:grid;place-items:center;margin-bottom:8px;--block-paper:#ffffff}
+.perk-dot svg{width:36px;height:36px;fill:none;stroke:#141414;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.perk-dot.b-violet svg{stroke:#ffffff}
+.perk-dot .cut{stroke-width:5.5}
+.perk-dot.b-sun .cut{stroke:var(--sun)} .perk-dot.b-violet .cut{stroke:var(--violet)} .perk-dot.b-coral .cut{stroke:var(--coral)}
+.perks h3{font-size:clamp(24px,2.4vw,34px)}
+.perks p{font-size:15px;max-width:22ch}
+@media (max-width:560px){.perks{gap:10px;padding-top:20px}.perk-dot{width:64px;height:64px;margin-bottom:4px}.perk-dot svg{width:28px;height:28px}.perks h3{font-size:18px}.perks p{font-size:12.5px;line-height:1.35}}
+@media (max-width:899px){.hero-photo .hero-img img{height:min(62vw,280px);object-fit:cover;object-position:50% 55%}.hero-photo .in{padding-block:22px 30px}.hero-copy{gap:16px}}
+/* selling points: tighter group in the middle */
+.perks{max-width:760px;margin-inline:auto;gap:12px}
+@media (min-width:900px){.perks{gap:16px}}
+.perks p{max-width:none}
+
+/* selling points: equal breathing space above and below */
+.perks{padding:56px 0}
+@media (max-width:560px){.perks{padding:36px 0}}
+
+/* price cards: no bars; each tier shows how many tags with little tag icons */
+.ladder .step{padding-bottom:20px}
+@media (min-width:900px){.ladder .step{padding:24px}.compact .ladder .step{padding:18px}}
+.tier-head{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.tier-tags{display:flex;align-items:center;padding-left:6px}
+.mini{width:30px;height:30px;border-radius:50%;margin-left:-8px;background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--bg) 0 3px,transparent 3.5px),
+  #3a3d40;box-shadow:0 0 0 2.5px var(--bg),0 2px 4px rgba(0,0,0,.2)}
+.mini-plus{margin-left:6px;font:700 20px var(--display);font-stretch:62%;line-height:1}
+.tier-name{font-family:var(--display);font-stretch:62%;font-weight:700;font-size:clamp(20px,3.2cqi,30px);line-height:1;text-transform:uppercase}
+.ladder .step.on .mini{box-shadow:0 0 0 2.5px var(--violet),0 2px 4px rgba(0,0,0,.25);background:
+  linear-gradient(#fff,#fff) 50% 55%/40% 40% no-repeat,
+  radial-gradient(circle at 50% 18%,var(--violet) 0 3px,transparent 3.5px),#141414}
+@media (max-width:560px){
+  .ladder .step{padding:14px 16px}
+  .tier-head{flex-direction:row;align-items:center;gap:10px}
+  .mini{width:22px;height:22px;margin-left:-6px}
+  .tier-name{font-size:18px}
+}
+
+/* footer: black with light text */
+.site-foot{background:#141414;color:#f4f4f2;margin-top:0}
+.site-foot .muted,.site-foot .label{color:#f4f4f2;opacity:.65}
+.site-foot .link,.site-foot .logo{color:#f4f4f2}
+.site-foot .logo i{border-color:#f4f4f2}
+.site-foot .logo i::after{background:#f4f4f2}
+.site-foot .foot-base{border-top-color:rgba(255,255,255,.14)}
+.site-foot button:focus-visible{outline-color:#c8dd7b}
+
+/* hero: equal space above and below the lede */
+.hero-copy h1{margin-bottom:-.04em}
+.hero-copy .lede{margin-bottom:6px}
+@media (max-width:899px){.hero-copy .lede{margin-bottom:1px}}
+
+/* mobile: taller header photo so the whole keyring shows */
+@media (max-width:899px){.hero-photo .hero-img img{height:min(76vw,600px);object-position:50% 50%}}
+
+/* burger menu (mobile) */
+.burger{display:none;width:44px;height:44px;border:0;background:none;padding:0;cursor:pointer;flex-direction:column;justify-content:center;align-items:center;gap:5px;color:var(--ink)}
+.burger i{display:block;width:24px;height:2.5px;border-radius:2px;background:currentColor;transition:transform .2s,opacity .2s}
+header.site.open .burger i:nth-child(1){transform:translateY(7.5px) rotate(45deg)}
+header.site.open .burger i:nth-child(2){opacity:0}
+header.site.open .burger i:nth-child(3){transform:translateY(-7.5px) rotate(-45deg)}
+@media (max-width:899px){
+  header.site{position:relative;padding-block:12px}
+  .burger{display:flex;margin-right:-10px}
+  header.site nav{display:none}
+  header.site.open nav{display:flex;flex-direction:column;align-items:stretch;gap:0;position:absolute;top:100%;left:calc(50% - 50vw);width:100vw;box-sizing:border-box;z-index:60;background:var(--bg);padding:4px 16px 20px;border-bottom:1px solid var(--line);box-shadow:0 18px 30px -18px rgba(0,0,0,.25)}
+  header.site.open nav .btn{display:block;width:100%;text-align:left;padding:18px 4px;font-size:15px;border-radius:0;border-bottom:1px solid var(--line);background:none;color:var(--ink)}
+  header.site.open nav .btn:not(.ghost){order:5;margin-top:16px;border:0;border-radius:999px;background:var(--ink);color:var(--bg);text-align:center;padding:18px}
+}
+
+/* ---------- /scan pages ---------- */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+body.focus header.site nav, body.focus .burger{display:none!important}
+.card-h{font-size:clamp(24px,5.5vw,30px)}
+.scan-head h1{font-size:clamp(40px,11vw,64px);line-height:.9}
+.scan-ticks{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14px;font-weight:600}
+.scan-ticks li{display:flex;align-items:center;gap:7px}
+.scan-ticks li::before{content:"";width:16px;height:16px;border-radius:50%;background:var(--block-ink, #141414) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.2l2.3 2.2 4.7-4.8' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat}
+.b-violet .scan-ticks li::before{background-color:rgba(255,255,255,.22)}
+.b-coral .scan-ticks li::before{background-color:#141414}
+.scan-doors .door{cursor:default}
+.scan-doors .door:hover{box-shadow:none}
+.scan-doors .disp{font-size:24px}
+.scan-mini{padding-block:16px}
+.scan-mini p{margin:0}
+.faq details{border-top:1px solid var(--line);padding:14px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:16px;align-items:center}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";font:700 22px var(--display);line-height:1;transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{margin:10px 0 0}
+.how-mini .how-steps li{padding-bottom:16px}
+.how-mini .how-steps li h3{font-size:22px}
+.how-mini .how-art{aspect-ratio:16/8}
+@media (min-width:900px){.how-mini .how-steps{grid-template-columns:1fr}.how-mini .how-steps li{display:grid;grid-template-columns:150px 1fr;column-gap:16px;align-items:center;padding:10px}.how-mini .how-art{grid-row:span 2;aspect-ratio:4/3}.how-mini .how-steps li h3,.how-mini .how-steps li p{padding:0;margin:0}.how-mini .how-steps li h3{align-self:end}.how-mini .how-steps li p{align-self:start}}
+.scan-buy{gap:18px}
+.scan-buy-copy{display:flex;flex-direction:column;gap:8px}
+.scan-buy-copy p{margin:0}
+.scan-prices{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.scan-prices li{background:var(--bg);border-radius:16px;padding:14px 12px;display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.scan-prices li.best{box-shadow:inset 0 0 0 2px var(--ink)}
+.scan-prices b{font:700 18px var(--display);font-stretch:62%;text-transform:uppercase;line-height:1}
+.scan-prices span:last-child{font-size:13px;color:var(--muted)}
+.scan-prices .mini{width:22px;height:22px;margin-left:-6px}
+.scan-buy .btn{align-self:flex-start}
+@media (max-width:899px){.scan-head{padding:22px}.scan-doors{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="site">
+    <button class="logo" data-go="home" aria-label="Keytag home"><i></i>Keytag</button>
+    <button class="burger" type="button" aria-label="Menu" aria-expanded="false" aria-controls="siteNav"><i></i><i></i><i></i></button>
+    <nav class="row" id="siteNav" style="gap:6px">
+      <button class="btn ghost sm" id="accountBtn" data-go="account">Log in</button>
+      <button class="btn ghost sm hide-sm" data-go="enter" data-arg="found">Found keys</button>
+      <button class="btn ghost sm hide-sm" data-go="register">Register Keytag</button>
+      <button class="btn sm" data-go="buy">Shop Keytag</button>
+    </nav>
+  </header>
+</div>
+<main id="app"><div class="wrap"><p class="muted" style="padding:40px 0">Loading…</p></div></main>
+<footer class="site-foot">
+  <div class="wrap foot-grid">
+    <div class="stack" style="gap:10px">
+      <button class="logo" data-go="home"><i></i>Keytag</button>
+      <p class="small muted" style="max-width:30ch">The no-battery tag that gets lost keys home.</p>
+    </div>
+    <div class="foot-col"><span class="label">Shop</span><button class="link" data-go="buy">Keytag</button></div>
+    <div class="foot-col"><span class="label">Help</span><button class="link" data-go="enter" data-arg="found">Found some keys</button><button class="link" data-go="register">Register a Keytag</button><button class="link" data-go="account">Log in</button></div>
+    <div class="foot-col"><span class="label">Legal</span><button class="link" data-go="privacy">Privacy policy</button><button class="link" data-go="terms">Terms</button></div>
+  </div>
+  <div class="wrap"><p class="small muted foot-base">© 2026 Keytag · keytag.club</p></div>
+</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+/* Keytag site: talks to the /api server functions and Supabase login.
+   Helpers marked HELPERS are copied in from the design prototype at build time. */
+
+/* ---------- state ---------- */
+const db = { qty: 1 };            // quantity picker (name kept from the prototype's pricing helpers)
+function save(){}                 // pricing helpers call save(); nothing to persist here
+const state = { flash: null, pending: null };
+let CONFIG = null, sb = null, session = null;
+
+const TIERS = [{min:1, each:14},{min:2, each:12},{min:5, each:10}];
+const tierLabel = i => { const t=TIERS[i], nx=TIERS[i+1]; return !nx ? `${t.min}+ tags` : (nx.min-1===t.min ? `${t.min} tag${t.min>1?'s':''}` : `${t.min}–${nx.min-1} tags`); };
+/* shared pricing block: a falling price ladder + live calculator */
+const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pricing">
+  <div class="ladder" aria-label="Price per tag by quantity">
+    ${TIERS.map((t,i)=>{ const nx=TIERS[i+1]; const on = n>=t.min && (!nx || n<nx.min); const save = TIERS[0].each - t.each; return `
+    <div class="step${on?' on':''}${nx?'':' best'}" style="--h:${(t.each/TIERS[0].each).toFixed(3)}">
+      <span class="best-badge${nx?' ph':''}" ${nx?'aria-hidden="true"':''}>Best value</span>
+      <span class="tier-head"><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat([1,3,5][i] || 1)}${nx ? '' : '<b class="mini-plus">+</b>'}</span><span class="tier-name">${tierLabel(i)}</span></span>
+      <span class="yours${on?'':' ph'}" ${on?'':'aria-hidden="true"'}>Your price</span>
+      <span class="step-price"><span class="disp">£${t.each}</span><span class="small">each</span></span>
+      <span class="pill${save?' on':''}">${save ? `Save £${save} a tag` : 'Full price'}</span>
+    </div>`; }).join('')}
+  </div>
+  <div class="calc">
+    <div class="stack" style="gap:8px">
+      <span class="label">How many?</span>
+      <div class="stepper" role="group" aria-label="Quantity">
+        <button class="btn" data-qty="-1" aria-label="One fewer" ${n<=1?'disabled':''}>−</button>
+        <input id="qtyIn" type="number" inputmode="numeric" min="1" max="99" value="${n}" aria-label="Number of tags">
+        <button class="btn" data-qty="1" aria-label="One more">+</button>
+      </div>
+    </div>
+    <div class="stack calc-total" style="gap:6px">
+      <span class="label muted">${n} tag${n>1?'s':''} × £${unit(n)}</span>
+      <span class="total">£${total(n)}</span>
+      <span class="small muted">${nt ? `Add ${nt.min-n} more to pay £${nt.each} each` : 'Best price per tag'}</span>
+    </div>
+    <div class="free-del"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v9H2zM13 9h4l3 3v3h-7z"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span><b>Free UK delivery</b><span>On every order, any size</span></span></div>
+    <button class="btn calc-btn" id="checkout">Checkout</button>
+  </div></div>`; };
+/* change quantity without re-rendering the page (no entrance animation, no jump) */
+function setQty(n){
+  db.qty = Math.max(1, Math.min(99, n || 1)); save();
+  const el = document.querySelector('.pricing'); if(!el) return;
+  const focusedQty = document.activeElement && document.activeElement.dataset ? document.activeElement.dataset.qty : null;
+  el.outerHTML = pricing(qty());
+  if(focusedQty) document.querySelector(`.pricing [data-qty="${focusedQty}"]`)?.focus();
+}
+const unit = n => TIERS.filter(t=>n>=t.min).at(-1).each;
+const total = n => n * unit(n);
+const qty = () => Math.max(1, Math.min(99, db.qty || 1));
+const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const QR = '1111111100000110111011010101101110110000011111111';
+const tagArt = (code, cls='') => `<div class="tag ${cls}" aria-hidden="true"><div class="qr">${QR.split('').map(b=>`<span class="${b==='1'?'':'o'}"></span>`).join('')}</div><small>${esc(code)}</small></div>`;
+/* coloured page header: tone = sky | sun | lime | coral | violet */
+const head = (tone, chips, title, sub, extra='') => `
+  <section class="block b-${tone}">
+    ${chips && chips.length ? `<div class="chips">${chips.map(c=>`<span class="chip-tag">${c}</span>`).join('')}</div>` : ''}
+    ${extra}
+    <h1>${title}</h1>
+    ${sub ? `<p class="lede">${sub}</p>` : ''}
+  </section>`;
+const ICON = {
+  battery:'<svg viewBox="0 0 24 24"><rect x="3" y="7" width="16" height="10" rx="2"/><path d="M21 10.5v3"/><path d="M6.5 10v4M9.5 10v4"/><path class="cut" d="M4 4l16 16"/><path d="M4 4l16 16"/></svg>',
+  app:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.6"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.6"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.6"/><path class="cut" d="M3 3l18 18"/><path d="M3 3l18 18"/></svg>',
+  sub:'<svg viewBox="0 0 24 24"><path d="M19.5 12a7.5 7.5 0 0 1-12.8 5.3"/><path d="M4.5 12a7.5 7.5 0 0 1 12.8-5.3"/><path d="M17.6 3.5v3.3h-3.3"/><path d="M6.4 20.5v-3.3h3.3"/><path class="cut" d="M4 4l16 16"/><path d="M4 4l16 16"/></svg>'
+};
+/* how-it-works illustrations (drawn on coloured tiles, so fixed ink) */
+const QRMINI = (x,y,s) => { const c=s/7; return QR.split('').map((b,i)=> b==='1' ? `<rect x="${x+(i%7)*c}" y="${y+Math.floor(i/7)*c}" width="${c*.86}" height="${c*.86}" fill="#141414" stroke="none"/>` : '').join(''); };
+const ART = {
+  clip:`<svg viewBox="0 0 160 120" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="58" cy="34" r="20"/>
+    <path d="M74 44l14 8"/><circle cx="98" cy="58" r="12" fill="#fff"/><circle cx="98" cy="58" r="4"/>
+    <path d="M107 66l26 26M120 79l7-7M127 86l7-7"/>
+    <path d="M50 52l-4 10"/>
+    <circle cx="44" cy="84" r="24" fill="#fff"/><circle cx="44" cy="67" r="3" fill="#141414" stroke="none"/>
+    ${QRMINI(33,74,22)}
+  </svg>`,
+  scan:`<svg viewBox="0 0 160 120" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="52" y="8" width="56" height="104" rx="12" fill="#fff"/>
+    <path d="M72 16h16"/>
+    <path d="M64 40v-8h8M88 32h8v8M96 72v8h-8M72 80h-8v-8"/>
+    ${QRMINI(68,40,24)}
+    <path d="M58 56h44" stroke="#ee5a4a" stroke-width="3.5"/>
+    <rect x="64" y="90" width="32" height="10" rx="5" fill="#141414" stroke="none"/>
+  </svg>`,
+  text:`<svg viewBox="0 0 160 120" fill="none" stroke="#141414" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 22h96a12 12 0 0 1 12 12v30a12 12 0 0 1-12 12H58l-18 16v-16H22a12 12 0 0 1-12-12V34a12 12 0 0 1 12-12z" fill="#fff"/>
+    <path d="M28 40h72M28 52h52"/>
+    <circle cx="128" cy="88" r="18" fill="#141414" stroke="none"/>
+    <path d="M120 88l6 6 11-12" stroke="#c8dd7b" stroke-width="3.5"/>
+  </svg>`
+};
+
+
+/* ---------- small helpers ---------- */
+const $ = id => document.getElementById(id);
+const norm = c => (c||'').toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+const fmtCode = c => c ? `${c.slice(0,3)}-${c.slice(3)}` : '';
+const when = iso => new Date(iso).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+const looksLikeMobile = s => /^(\+?44\s?7|07|\+[1-9])[\d\s()-]{8,}$/.test(String(s).trim());
+
+async function api(path, { method='GET', body } = {}){
+  const headers = { 'Content-Type':'application/json' };
+  if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`;
+  const r = await fetch(path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  let data = {}; try { data = await r.json(); } catch(e) {}
+  if (!r.ok) { const err = new Error(data.error || 'Something went wrong. Please try again.'); err.status = r.status; throw err; }
+  return data;
+}
+function showErr(id, msg){ const el=$(id); if(!el) return; el.textContent = msg; el.hidden = !msg; }
+async function busy(btn, label, fn){
+  const old = btn?.textContent; if(btn){ btn.disabled = true; btn.textContent = label; }
+  try { return await fn(); } finally { if(btn && document.body.contains(btn)){ btn.disabled = false; btn.textContent = old; } }
+}
+const site = () => location.origin;
+const texts = () => CONFIG?.textsEnabled !== false;   // off until the Twilio number is live
+
+
+/* sections shared by the scan pages */
+function scanKeepSafe(title = 'Can’t hang on to them?'){ return `
+    <section class="card">
+      <h2 class="card-h">${title}</h2>
+      <ol class="steps">
+        <li><div><b>Leave them somewhere staffed</b><p class="muted">The counter of the shop, café or bar where you found them, or a reception desk. Say where in your message.</p></div></li>
+        <li><div><b>On a bus or train?</b><p class="muted">Hand them to staff. Most transport companies run a lost property office.</p></div></li>
+        <li><div><b>Keep them out of sight</b><p class="muted">Don’t leave keys where anyone could pick them up.</p></div></li>
+      </ol>
+    </section>`; }
+function scanBuy(title = 'Need more Keytags?'){ return `
+    <section class="card scan-buy">
+      <div class="scan-buy-copy">
+        <h2 class="card-h">${title}</h2>
+        <p class="muted">House, car, bike, work, or a present. No battery, no app, no subscription. Free UK delivery.</p>
+      </div>
+      <ul class="scan-prices">
+        <li><span class="tier-tags" aria-hidden="true"><i class="mini"></i></span><b>1 tag</b><span>£14</span></li>
+        <li><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat(3)}</span><b>2–4 tags</b><span>£12 each</span></li>
+        <li class="best"><span class="tier-tags" aria-hidden="true">${'<i class="mini"></i>'.repeat(5)}</span><b>5+ tags</b><span>£10 each</span></li>
+      </ul>
+      <button class="btn" data-go="buy">Shop Keytags</button>
+    </section>`; }
+
+/* ---------- views ---------- */
+const app = $('app');
+
+const views = {
+  home(){ return `
+    <section class="block bleed hero-photo">
+      <picture class="hero-img">
+        <source media="(max-width: 899px)" srcset="/assets/hero-mobile.webp" type="image/webp">
+        <source media="(max-width: 899px)" srcset="/assets/hero-mobile.jpg">
+        <source srcset="/assets/hero.webp" type="image/webp">
+        <img src="/assets/hero.jpg" alt="A Keytag with a QR code on a keyring with car and house keys" width="2400" height="1200" fetchpriority="high">
+      </picture>
+      <div class="in hero-grid">
+        <div class="stack hero-copy">
+          <h1>The keyring that helps lost keys get home.</h1>
+          <p class="lede">Lose your keys. Get a text when someone finds them.</p>
+          <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
+        </div>
+      </div>
+    </section>
+    <div class="wrap section">
+    <section class="card how">
+      <h2>How it works</h2>
+      <ol class="how-steps">
+        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><span class="how-n" aria-hidden="true">1</span><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><span class="how-n" aria-hidden="true">2</span><h3>Add your details</h3><p class="muted">Scan it once with your phone camera and add your contact details.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.text}</div><span class="how-n" aria-hidden="true">3</span><h3>Get a text</h3><p class="muted">If your keys are lost, the finder scans the tag and you hear where they are.</p></li>
+      </ol>
+      <div class="panel priv-strip">
+        <span class="shield" aria-hidden="true"></span>
+        <h3>Your number stays private</h3>
+        <p class="muted">Your data is safe. You will be contacted by Keytag.</p>
+      </div>
+    </section>
+    </div>
+    <div class="wrap section">
+    <ul class="perks" aria-label="Why Keytag">
+      <li><span class="perk-dot b-sun" aria-hidden="true">${ICON.battery}</span><h3>No battery</h3><p class="muted">Nothing to charge or run out</p></li>
+      <li><span class="perk-dot b-violet" aria-hidden="true">${ICON.app}</span><h3>No app</h3><p class="muted">Any camera phone can scan it</p></li>
+      <li><span class="perk-dot b-coral" aria-hidden="true">${ICON.sub}</span><h3>No subscription</h3><p class="muted">Pay once, keep it for life</p></li>
+    </ul>
+    </div>
+    <div class="wrap section">
+    <section class="card packs-sec">
+      <div class="sec-head"><h2>The more you buy, the less you pay</h2><p class="muted">The price per tag drops as you add more. Pay once, free UK delivery, no subscription.</p></div>
+      ${pricing(qty())}
+    </section>
+    </div>
+    <div class="wrap section">
+    <div class="doors">
+      <button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Found keys?</span><span class="small muted">Tell the owner</span></button>
+      <button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">Got a new tag? Set it up</span></button>
+    </div>
+    </div>
+    <section class="block bleed b-violet signup">
+      <div class="in signup-grid">
+        <div class="stack" style="gap:10px"><h2>Be first in line</h2><p class="lede">Hear first about new Keytag products, colours and launches. No spam.</p></div>
+        <form id="signupForm" class="signup-form">
+          <label for="suEmail" class="sr">Email</label>
+          <input id="suEmail" type="email" required autocomplete="email" placeholder="Your email">
+          <button class="btn" type="submit">Sign up</button>
+          <p id="suOk" class="small" hidden>Thanks. You're on the list.</p>
+        </form>
+      </div>
+    </section>`; },
+
+  enter(mode){ if (mode !== 'found') return views.register(); return `
+    ${head('coral',[],'Found some keys?','Scan the tag with your phone camera, or type the code on the back.')}
+    <form id="codeForm" class="card">
+      <label for="codeIn">Code on the tag<input id="codeIn" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <p id="codeErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+    </form>`; },
+
+  buy(){ return `
+    ${head('sun',[],'Get your Keytags','The more you buy, the less you pay. Pay once, free UK delivery, no subscription.')}
+    <section class="card compact">${pricing(qty())}</section>`; },
+
+  checkoutSoon(){ return `
+    ${head('sun',['Checkout'],'Opening soon','Our shop isn’t open just yet. Leave your email and we’ll tell you the moment it is.')}
+    <form id="signupForm" class="card">
+      <label for="suEmail">Email<input id="suEmail" type="email" required autocomplete="email"></label>
+      <button class="btn" type="submit">Tell me when it opens</button>
+      <p id="suOk" class="ok" hidden>Thanks. You're on the list.</p>
+    </form>`; },
+
+  unknownTag(code){ return `
+    ${head('sun',[],'We can’t find that tag',`Check the code on the back of the tag${code?` (you entered ${esc(fmtCode(code))})`:''}. It’s 6 letters and numbers.`)}
+    <div class="doors"><button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">New tag</span></button></div>`; },
+
+
+  /* ---------- /scan: the page people land on after scanning a tag ---------- */
+  scanStart(){ return `
+    <section class="block b-sky scan-head">
+      <span class="chip-tag">Keytag</span>
+      <h1>Scanned a Keytag?</h1>
+      <p class="lede">Enter the code on the back of the tag. Whether you’ve found some keys or you’re setting up your own, it takes a minute.</p>
+    </section>
+    <form id="codeForm" class="card">
+      <h2 class="card-h">Code on the tag</h2>
+      <label for="codeIn"><span class="sr">Code on the tag</span><input id="codeIn" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <p id="codeErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+      <p class="muted small">It’s 6 letters and numbers, printed under the QR code.</p>
+    </form>
+    <div class="doors scan-doors">
+      <div class="door b-sky"><span class="disp">Found some keys?</span><span class="small muted">Enter the code and tell the owner where they are. They never see your number.</span></div>
+      <div class="door b-sun"><span class="disp">New Keytag?</span><span class="small muted">Enter the code to add your email and mobile. No app, no password.</span></div>
+    </div>
+    ${scanBuy()}`; },
+
+  scanFound(code){ return `
+    <section class="block b-coral scan-head">
+      <span class="chip-tag">Tag ${esc(fmtCode(code))}</span>
+      <h1>You’ve found someone’s keys</h1>
+      <p class="lede">Thank you. Tell the owner where they are and they’ll ${texts() ? 'get a text' : 'hear from us'} straight away.</p>
+      <ul class="scan-ticks"><li>Free</li><li>No app</li><li>Your number stays private</li></ul>
+    </section>
+<form id="findForm" class="card scan-form" data-code="${esc(code)}">
+      <h2 class="card-h">Where are the keys?</h2>
+      <div class="choices" role="group" aria-label="Quick answers">
+        <button type="button" class="choice" data-chip="I've handed them in at ">Handed them in</button>
+        ${texts() ? '<button type="button" class="choice" data-chip="I still have them. Text me to arrange getting them back." data-keep="1">I still have them</button>' : ''}
+      </div>
+      <label for="fMsg"><span class="sr">Where are they?</span><textarea id="fMsg" required maxlength="160" placeholder="Behind the counter at the café on Old Street"></textarea></label>
+      <p id="fCount" class="muted" style="font-size:12px;text-align:right;margin-top:-10px">0 / 160</p>
+      <div class="contact-opt"${texts() ? '' : ' hidden'}>
+        <label class="switch-row" for="fAllow">
+          <input type="checkbox" id="fAllow">
+          <span class="switch" aria-hidden="true"></span>
+          <span class="switch-text"><b>Let the owner contact me</b><span class="small muted" id="allowHint">They can text you back through Keytag. They never see your number.</span></span>
+        </label>
+        <div id="phoneWrap" hidden>
+          <label for="fPhone">Your mobile<input id="fPhone" type="tel" autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+        </div>
+      </div>
+      <p id="findErr" class="err" hidden></p>
+      <button class="btn" type="submit">Send</button>
+    </form>
+    <section class="card">
+      <h2 class="card-h">What happens next</h2>
+      <ol class="steps">
+        <li><div><b>The owner hears straight away</b><p class="muted">We send your message to them by ${texts() ? 'text and email' : 'email'}.</p></div></li>
+        ${texts() ? '<li><div><b>They can reply, if you let them</b><p class="muted">Tick “Let the owner contact me” and their reply comes to you as a text from Keytag.</p></div></li>' : ''}
+        <li><div><b>Nobody sees anyone’s number</b><p class="muted">Messages go through Keytag, so your details stay private, and so do theirs.</p></div></li>
+      </ol>
+    </section>
+    ${scanKeepSafe()}
+    <section class="card scan-mini">
+      <p class="muted small">Is this your tag? <button class="link" data-go="login">Log in</button> and scan it again to send yourself a test.</p>
+    </section>
+    ${scanBuy('Want one for your keys?')}`; },
+
+  scanSetup(code){ return `
+    <section class="block b-violet scan-head">
+      <span class="chip-tag">Tag ${esc(fmtCode(code))}</span>
+      <h1>Set up your Keytag</h1>
+      <p class="lede">Add where we should reach you if your keys are found. It takes a minute. No app, no password.</p>
+      <ul class="scan-ticks"><li>Free to run, no subscription</li><li>Finders never see your details</li></ul>
+    </section>
+    <form id="regForm" class="card scan-form" data-code="${esc(code)}">
+      <h2 class="card-h">Your details</h2>
+      <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
+      <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+      <label for="rLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="rLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
+      <p class="muted small">By setting up you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
+      <p id="regErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+      <p class="muted small">Not your tag? <button class="link" type="button" data-go="unregFound" data-arg="${esc(code)}">I found these keys</button></p>
+    </form>
+    <section class="card">
+      <h2 class="card-h">Three quick steps</h2>
+      <ol class="steps">
+        <li><div><b>Add your details</b><p class="muted">Your email and mobile. Already have a Keytag? Use the same email and this one joins your account.</p></div></li>
+        <li><div><b>Confirm it’s you</b><p class="muted">We email you a 6-digit code${texts() ? ', and text one to new customers' : ''}. Type it in and you’re set.</p></div></li>
+        <li><div><b>Clip it on</b><p class="muted">Put the tag on your keys. If someone finds them and scans it, you’ll hear where they are.</p></div></li>
+      </ol>
+    </section>
+    <section class="card how-mini">
+      <h2 class="card-h">How it works</h2>
+      <ol class="how-steps">
+        <li><div class="how-art" aria-hidden="true">${ART.clip}</div><h3>Clip it on</h3><p class="muted">Put the tag on your keyring.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.scan}</div><h3>Someone scans it</h3><p class="muted">Any phone camera opens a page to message you.</p></li>
+        <li><div class="how-art" aria-hidden="true">${ART.text}</div><h3>You get a text</h3><p class="muted">You hear where your keys are, and can reply.</p></li>
+      </ol>
+    </section>
+    <section class="card">
+      <h2 class="card-h">Good to know</h2>
+      <div class="faq">
+        <details><summary>Will a finder see my number or email?</summary><p class="muted">No. Their message comes to you from Keytag, and your replies go back through Keytag. Neither of you sees the other’s details.</p></details>
+        <details><summary>Is there anything to pay after this?</summary><p class="muted">No. There’s no subscription and nothing to charge. The tag has no battery.</p></details>
+        <details><summary>Can I have more than one tag?</summary><p class="muted">Yes. Set each one up with the same email and they all sit in one account. Give each a name, like House or Car, so you know which keys were found.</p></details>
+        <details><summary>How do I change my details later?</summary><p class="muted"><button class="link" type="button" data-go="login">Log in</button> with your email. We send you a link, no password needed.</p></details>
+        <details><summary>Is it a present for someone else?</summary><p class="muted">Let them scan it and set it up with their own details, so the texts go to them.</p></details>
+        <details><summary>How do I check it works?</summary><p class="muted">Once you’re set up, scan the tag while logged in. We’ll email you an example of the message a finder sends.</p></details>
+      </div>
+    </section>
+    ${scanBuy('One for every set of keys')}`; },
+
+  unregFound(code){ return `
+    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'This tag isn’t set up yet','So we can’t reach the owner this time. Thanks for trying.')}
+    ${scanKeepSafe('Best options')}
+    ${scanBuy('Want one for your keys?')}`; },
+
+  /* Register: step 1 = code, step 2 = email + mobile (code already checked) */
+  register(code){
+    if (!code) return `
+    ${head('violet',[],'Register your Keytag','Enter the code on the back of your tag.')}
+    <form id="regCode" class="card">
+      <label for="rCode">Code on the tag<input id="rCode" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <p id="rCodeErr" class="err" hidden></p>
+      <button class="btn" type="submit">Continue</button>
+    </form>`;
+    return `
+    ${head('violet',[`Tag ${esc(fmtCode(code))}`],'Register your Keytag','Where should we text you if your keys are found?')}
+    <form id="regForm" class="card" data-code="${esc(code)}">
+      <label for="rEmail">Email<input id="rEmail" type="email" required autocomplete="email"></label>
+      <label for="rPhone">Mobile number<input id="rPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+      <label for="rLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="rLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
+      <p class="muted small">Finders never see your number or email. By registering you agree to our <button class="link" type="button" data-go="terms">terms</button> and <button class="link" type="button" data-go="privacy">privacy policy</button>.</p>
+      <p id="regErr" class="err" hidden></p>
+      <button class="btn" type="submit">Save</button>
+    </form>`; },
+
+  verify(){ const v = state.verify || {}; return `
+    ${head('violet',[`Tag ${esc(fmtCode(v.code||''))}`], v.phoneSent ? 'Check your email and phone' : 'Check your email',
+      `We’ve sent a 6-digit code to ${esc(v.email||'your email')}${v.phoneSent ? ` and texted one to ${esc(v.phone)}` : ''}.`)}
+    <form id="verifyForm" class="card">
+      <label for="vEmail">Code from your email<input id="vEmail" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>
+      ${v.phoneSent ? '<label for="vPhone">Code from your text<input id="vPhone" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>' : ''}
+      <p id="verifyErr" class="err" hidden></p>
+      <button class="btn" type="submit">Confirm</button>
+      <p class="muted small">Codes expire after 15 minutes. Not arrived? Check spam, or <button class="link" type="button" id="resendCodes">send new codes</button>.</p>
+      <p id="resentCodes" class="ok" hidden>New codes sent</p>
+    </form>`; },
+
+  phoneCode(){ const v = state.verify || {}; return `
+    ${head('violet',[],'Confirm your new number',`We’ve texted a 6-digit code to ${esc(v.phone||'your new number')}.`)}
+    <form id="phoneCodeForm" class="card">
+      <label for="pcCode">Code from your text<input id="pcCode" class="code otp" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="123456" required></label>
+      <p id="pcErr" class="err" hidden></p>
+      <button class="btn" type="submit">Confirm</button>
+      <button class="btn ghost" type="button" data-go="account">Cancel</button>
+    </form>`; },
+
+  registered(r){ return `
+    ${head('lime',[`Tag ${esc(fmtCode(r.code))}`], r.existing ? 'Added to your account' : 'Your Keytag is registered',
+      r.existing ? `This email already had a Keytag account, so we’ve added the tag to it and kept your number, ${esc(r.phone)}.`
+                 : `If someone finds your keys, we’ll text ${esc(r.phone)}.`)}
+    <section class="card">
+      <p class="muted">We’ve emailed you a link to change your details or add more tags any time. No password needed.</p>
+      <div class="row" style="gap:10px"><button class="btn" data-go="register">Register another tag</button><button class="btn ghost" data-go="home">Done</button></div>
+    </section>`; },
+
+  taken(code){ return `
+    ${head('sun',[`Tag ${esc(fmtCode(code))}`],'This Keytag is already registered','If it’s yours, enter your email and we’ll send you a link to edit your details.')}
+    <form id="takenForm" class="card">
+      <label for="tEmail">Email<input id="tEmail" type="email" required autocomplete="email"></label>
+      <p id="takenMsg" class="ok" hidden>If that email matches this Keytag, we’ve sent a link. Check your inbox.</p>
+      <button class="btn" type="submit">Send me a link</button>
+      <p class="muted small">Found these keys? <button class="link" type="button" data-scan="${esc(code)}">Tell the owner</button>.</p>
+    </form>`; },
+
+  linkSent(){ const p = state.pending || {}; return `
+    ${head('lime',[],'Check your email',`Tap the link we sent to ${esc(p.email||'your email')} to log in.`)}
+    <section class="card">
+      <p class="muted">Open the email on any device. The link works once and expires after an hour.</p>
+      <p class="muted small">Not there? Check spam or <button class="link" id="resend">send it again</button>.</p>
+      <p id="resent" class="ok" hidden>Sent again</p>
+      <p id="resendErr" class="err" hidden></p>
+    </section>`; },
+
+  login(){ return `
+    ${head('sky',[],'Log in','We’ll email you a link. No password needed.')}
+    <form id="loginForm" class="card">
+      <label for="lEmail">Email<input id="lEmail" type="email" required autocomplete="email"></label>
+      <p id="loginErr" class="err" hidden></p>
+      <button class="btn" type="submit">Send link</button>
+      <p class="muted small">New Keytag? <button class="link" type="button" data-go="register">Register it</button>.</p>
+    </form>`; },
+
+  claiming(){ return `${head('lime',[],'Adding your tag…','One moment.')}`; },
+
+  needDetails(){ return `
+    ${head('violet',[],'Nearly done','Where should we text you if your keys are found?')}
+    <form id="detailsNeeded" class="card">
+      <label for="nPhone">Mobile number<input id="nPhone" type="tel" required autocomplete="tel" inputmode="tel" placeholder="07..."></label>
+      <p id="needErr" class="err" hidden></p>
+      <button class="btn" type="submit">Save</button>
+    </form>`; },
+
+  problem(msg){ return `
+    ${head('coral',[],'That didn’t work', esc(msg))}
+    <div class="row" style="gap:10px"><button class="btn" data-go="account">Go to my tags</button><button class="btn ghost" data-go="home">Home</button></div>`; },
+
+  addTag(code){ return `
+    <section class="block b-sky">
+      ${tagArt(fmtCode(code))}
+      <h1 class="center">Add this Keytag to your account?</h1>
+      <form id="addOne" class="stack" style="gap:8px" data-code="${esc(code)}">
+        <label for="aLabel"><span>Which keys? <span class="muted">(optional)</span></span><input id="aLabel" maxlength="30" placeholder="e.g. House, Car, Bike"></label>
+        <button class="btn" type="submit">Add ${esc(fmtCode(code))}</button>
+        <button class="btn ghost" type="button" data-go="unregFound" data-arg="${esc(code)}">It's not mine, I found it</button>
+      </form>
+    </section>`; },
+
+  rename(code){ return `
+    ${head('sky',[`Tag ${esc(fmtCode(code))}`],'Name this tag','So you know which keys a message is about.')}
+    <form id="renameForm" class="card" data-code="${esc(code)}">
+      <label for="nLabel">Which keys?<input id="nLabel" maxlength="30" placeholder="e.g. House, Car, Bike" required></label>
+      <p id="renameErr" class="err" hidden></p>
+      <button class="btn" type="submit">Save</button>
+      <button class="btn ghost" type="button" data-go="account">Cancel</button>
+    </form>`; },
+
+  yourTag(r){ return `
+    ${head('lime',[r.code ? `Tag ${esc(fmtCode(r.code))}` : 'Your tag'],'Your tag works',`If someone finds your keys, you'll ${texts() ? `get a text at ${esc(r.phone||'your mobile')}` : 'hear from us by email'}. We've emailed you an example.`)}
+    <section class="card">
+      <h2 class="card-h">Your tags</h2>
+      <p class="muted">Name your tags, update your number, or gift a tag to someone else.</p>
+      <div class="row" style="gap:10px"><button class="btn" data-go="account">Manage my tags</button><button class="btn ghost" data-go="register">Add another tag</button></div>
+    </section>
+    ${scanBuy('One for every set of keys')}`; },
+
+  sent(canReply){ return `
+    ${head('lime',[],'Sent. Thank you!', canReply ? 'If the owner replies, you’ll get a text from Keytag.' : 'The owner has your message. That’s all you need to do.')}
+    <button class="door" data-go="buy" style="flex-direction:row;justify-content:space-between;align-items:center;width:100%"><span class="disp">Want one for your keys?</span><span class="small muted">From £10 →</span></button>`; },
+
+  async dashboard(){
+    if (!session) return views.login();
+    let d;
+    try { d = await api('/api/me'); } catch(e){ if(e.status===401){ session=null; return views.login(); } return views.problem(e.message); }
+    const flash = state.flash; state.flash = null;
+    if (!d.owner) return `
+      ${head('violet',[],'No tags yet',`You're logged in as ${esc(d.email)}. Scan your tag to set it up.`)}
+      <button class="btn" data-go="register">Register a Keytag</button>`;
+    const o = d.owner, tags = d.tags;
+    return `
+    ${head('violet',[], o.name ? `Hi ${esc(o.name.split(' ')[0])}` : 'Your Keytags', 'Your tags and the number we text if they’re found.')}
+    ${flash ? `<p class="ok">${esc(flash)}</p>` : ''}
+    <section class="card">
+      <h2>Your tags</h2>
+      <div class="tagrows">
+      ${tags.length ? tags.map(t=>`
+        <div class="tagrow">
+          <span class="stack" style="gap:2px"><span class="disp">${esc(t.label || fmtCode(t.code))}</span>${t.label ? `<span class="small muted code">${esc(fmtCode(t.code))}</span>` : ''}</span>
+          <span class="row" style="gap:6px">
+            <button class="btn sm" data-scan="${esc(t.code)}">Test</button>
+            <details class="more"><summary class="btn ghost sm">More</summary>
+              <div class="menu"><button data-go="rename" data-arg="${esc(t.code)}">${t.label ? 'Rename' : 'Name it'}</button><button data-go="gift" data-arg="${esc(t.code)}">Gift to someone</button><button data-go="remove" data-arg="${esc(t.code)}">Remove</button></div>
+            </details>
+          </span>
+        </div>`).join('') : '<p class="muted">No tags on your account.</p>'}
+      </div>
+      <form id="addForm" class="stack" style="gap:8px">
+        <span class="label">Add a tag</span>
+        <div class="row" style="gap:8px;align-items:flex-end">
+          <label for="aCode" style="flex:1 1 120px">Code<input id="aCode" class="code" placeholder="On the tag" autocomplete="off" autocapitalize="characters"></label>
+          <label for="aLabel2" style="flex:1 1 120px"><span>Which keys? <span class="muted">(optional)</span></span><input id="aLabel2" maxlength="30" placeholder="e.g. Car"></label>
+          <button class="btn" type="submit">Add</button>
+        </div>
+        <p id="addErr" class="err" hidden></p>
+      </form>
+    </section>
+    <section class="card">
+      <h2>Messages from finders</h2>
+      ${d.conversations.length ? `<div class="msgs">${d.conversations.map(c=>`
+        <div class="msg">
+          <div class="row split"><span class="label">${esc(fmtCode(c.code))} · ${esc(when(c.at))}</span>${c.canReply?'<span class="pill on">Can reply</span>':''}</div>
+          ${c.messages.map(m=>`<p${m.direction==='owner_to_finder'?' class="muted"':''}>${m.direction==='owner_to_finder'?'You: ':''}“${esc(m.body)}”</p>`).join('')}
+          ${c.canReply?'<p class="small muted">Reply to the text from Keytag to message them. Your number stays hidden.</p>':''}
+        </div>`).join('')}</div>`
+        : '<p class="muted">No messages yet. If someone finds your keys, their message appears here and by text.</p>'}
+    </section>
+    <form id="detailsForm" class="card">
+      <h2>Your details</h2>
+      <label for="dName"><span>Name <span class="muted">(optional)</span></span><input id="dName" value="${esc(o.name||'')}" maxlength="80"></label>
+      <label for="dPhone">Mobile number<input id="dPhone" type="tel" value="${esc(o.phone)}" required></label>
+      <label for="dEmail">Email<input id="dEmail" value="${esc(o.email)}" disabled></label>
+      <p id="savedMsg" class="ok" hidden>Saved</p>
+      <p id="detailsErr" class="err" hidden></p>
+      <button class="btn" type="submit">Save</button>
+    </form>
+    <div class="row split" style="padding-inline:6px">
+      <button class="link small" id="logout">Log out</button>
+      <button class="link small muted" data-go="deleteAcct">Delete my account</button>
+    </div>`; },
+
+  gift(code){ return `
+    ${head('coral',['Gift',esc(fmtCode(code))],'Give this tag to someone','We’ll email them a link to set it up with their own details. Your details are removed from this tag straight away.')}
+    <form id="giftForm" class="card" data-code="${esc(code)}">
+      <label for="gName">Their name<input id="gName" required maxlength="80"></label>
+      <label for="gEmail">Their email<input id="gEmail" type="email" required></label>
+      <p id="giftErr" class="err" hidden></p>
+      <button class="btn" type="submit">Send gift</button>
+      <button class="btn ghost" type="button" data-go="account">Cancel</button>
+    </form>`; },
+
+  remove(code){ return `
+    <section class="card">
+      <h2>Remove ${esc(fmtCode(code))}?</h2>
+      <p class="muted">Use this if you've lost the tag itself or don't use it any more. Anyone who scans it afterwards won't be able to reach you.</p>
+      <p id="removeErr" class="err" hidden></p>
+      <button class="btn danger" id="confirmRemove" data-code="${esc(code)}">Remove tag</button>
+      <button class="btn ghost" data-go="account">Keep it</button>
+    </section>`; },
+
+  deleteAcct(){ return `
+    <section class="card">
+      <h2>Delete your account?</h2>
+      <p class="muted">We'll delete your name, email and phone number. Your tags will stop working until someone sets them up again.</p>
+      <p id="delErr" class="err" hidden></p>
+      <button class="btn danger" id="confirmDelete">Delete account</button>
+      <button class="btn ghost" data-go="account">Cancel</button>
+    </section>`; },
+
+  async admin(){
+    if (!session) return views.login();
+    let d;
+    try { d = await api('/api/admin'); } catch(e){ return views.problem(e.message); }
+    const kindName = {finder:'Finder page',owner_test:'Owner test',setup:'Set-up'};
+    return `
+    <section class="panel">
+      <span class="chip-tag" style="background:var(--on-panel);color:var(--panel)">Keytag admin</span>
+      <h1>Activity</h1>
+      <div class="tiles">
+        <div class="tile"><span class="label">Active tags</span><b>${d.stats.tagsActive}</b></div>
+        <div class="tile"><span class="label">Scans this week</span><b>${d.stats.scansWeek}</b></div>
+        <div class="tile"><span class="label">Finds this week</span><b>${d.stats.convsWeek}</b></div>
+      </div>
+      <p class="muted small">${d.stats.tagsTotal} tags made in total.</p>
+    </section>
+    <section class="card"><h2>Recent scans</h2>
+      ${d.scans.length ? `<div class="tablebox"><table><tr><th>When</th><th>Tag</th><th>Result</th></tr>${d.scans.map(s=>`<tr><td>${esc(when(s.scanned_at))}</td><td class="code">${esc(s.tag_code)}</td><td><span class="pill ${s.kind==='finder'?'on':''}">${kindName[s.kind]||esc(s.kind)}</span></td></tr>`).join('')}</table></div>` : '<p class="muted">No scans yet.</p>'}
+    </section>
+    <section class="card"><h2>Finds</h2>
+      ${d.conversations.length ? d.conversations.map(c=>`<div class="msg"><div class="row split"><span class="label">${esc(c.code)} · ${esc(c.owner||'No owner')} · ${esc(when(c.at))}</span>${c.canReply?'<span class="pill on">Finder left number</span>':''}</div>${c.messages.map(m=>`<p class="small">${m.direction==='owner_to_finder'?'Owner':'Finder'}: “${esc(m.body)}”</p>`).join('')}</div>`).join('') : '<p class="muted">No finds yet.</p>'}
+    </section>
+    <section class="card"><h2>Tags</h2>
+      <div class="tablebox"><table><tr><th>Code</th><th>Batch</th><th>Owner</th><th>Status</th></tr>${d.tags.map(t=>`<tr><td class="code">${esc(t.code)}</td><td>${esc(t.batch||'')}</td><td>${esc(t.owner||'—')}</td><td>${t.owner?'<span class="pill on">Active</span>':t.giftPending?'<span class="pill warn">Gift sent</span>':'<span class="pill">Not set up</span>'}</td></tr>`).join('')}</table></div>
+    </section>`; }
+};
+
+/* Privacy policy and terms. Company details are used on both pages. */
+const COMPANY = {
+  name: 'Studio Gilchrist Ltd',          // legal name of the business that runs Keytag
+  number: '10991066',
+  address: 'Unit One, Church Farm, Church Street, Seal, Sevenoaks, England, TN15 0AT',
+  ico: '[ICO registration number]',      // TODO: after paying the ICO data protection fee
+  email: 'hello@keytag.club',
+  updated: '24 October 2026'
+};
+
+const legalPage = (tone, title, intro, body) => `
+  ${head(tone, [`Updated ${COMPANY.updated}`], title, intro)}
+  <article class="card legal">${body}</article>`;
+
+Object.assign(views, {
+  privacy(){ return legalPage('sky', 'Privacy policy', 'We keep as little as possible: your name, email and mobile. Finders never see your details.', `
+    <h2>Who we are</h2>
+    <p>Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. We are the data controller for the personal information described here. Contact us at <b>${COMPANY.email}</b>.</p>
+
+    <h2>What we collect</h2>
+    <h3>If you own a Keytag</h3>
+    <ul>
+      <li><b>Name, email and mobile number</b>, so we can tell you when your keys are found.</li>
+      <li><b>Your tags</b>: which tag codes are linked to your account and when you set them up.</li>
+      <li><b>Messages from finders</b> about your keys, and your replies sent through Keytag.</li>
+    </ul>
+    <h3>If you find someone's keys</h3>
+    <ul>
+      <li><b>Your message</b> to the owner.</li>
+      <li><b>Your mobile number</b>, only if you choose “Let the owner contact me”. We use it to pass replies between you and the owner. The owner never sees it.</li>
+    </ul>
+    <h3>Everyone</h3>
+    <ul>
+      <li><b>Scans</b>: when a tag is scanned or its code is typed in, we record the tag and the time. We don't record your location.</li>
+      <li><b>Abuse protection</b>: to stop people trying codes at random, we keep a scrambled (one-way) version of your IP address for 24 hours, then delete it.</li>
+      <li><b>Launch list</b>: your email, if you sign up for news.</li>
+      <li><b>Orders</b> are handled by our shop provider, Shopify, which processes payment and delivery details under its own privacy policy. We never see your card details.</li>
+    </ul>
+    <p>We don't use advertising cookies or tracking on this site. We store your login in your browser so you stay signed in. This is essential for the site to work.</p>
+
+    <h2>How we use it</h2>
+    <table class="legal-table">
+      <tr><th>What</th><th>Why</th><th>Legal basis</th></tr>
+      <tr><td>Owner details</td><td>To run the service you signed up for: alerting you when your keys are found</td><td>Contract</td></tr>
+      <tr><td>Finder message and number</td><td>To get the keys back to their owner and relay replies</td><td>Legitimate interests</td></tr>
+      <tr><td>Scan records</td><td>To run the service, prevent misuse and improve it</td><td>Legitimate interests</td></tr>
+      <tr><td>Launch list email</td><td>To send you Keytag news</td><td>Consent (unsubscribe any time)</td></tr>
+    </table>
+    <p>We never sell your information or use it for anyone else's marketing.</p>
+
+    <h2>Who we share it with</h2>
+    <p>Only the services that run Keytag for us, under contracts that require them to protect it:</p>
+    <ul>
+      <li>Hosting, database and login providers.</li>
+      <li>Text message and email providers.</li>
+      <li>Our shop and payment provider.</li>
+    </ul>
+    <p>Some of these companies are based in the US. Where information leaves the UK, it is protected by the UK's approved safeguards, such as the International Data Transfer Addendum or the UK–US data bridge. We may also share information if the law requires it.</p>
+
+    <h2>How long we keep it</h2>
+    <ul>
+      <li><b>Account details</b>: until you delete your account.</li>
+      <li><b>Finder messages and finder numbers</b>: 90 days, then deleted automatically.</li>
+      <li><b>Scan records</b>: 12 months.</li>
+      <li><b>Launch list</b>: until you unsubscribe.</li>
+    </ul>
+
+    <h2>Your rights</h2>
+    <p>You can ask to see, correct or delete your information, object to how we use it, restrict it, or get a copy to take elsewhere. Owners can change their details or delete their account at any time from <button class="link" data-go="account">your account</button>. For anything else, email ${COMPANY.email}. We'll reply within one month.</p>
+    <p>If you're unhappy with how we've handled your information, you can complain to the Information Commissioner's Office at ico.org.uk. We'd appreciate the chance to put it right first.</p>
+
+    <h2>Age</h2>
+    <p>You must be 16 or over to set up a Keytag account. Anyone can tell an owner they've found their keys.</p>
+
+    <h2>Changes</h2>
+    <p>If we change this policy, we'll update the date at the top. If the change is significant, we'll email owners.</p>`); },
+
+  terms(){ return legalPage('sun', 'Terms', 'The short version: pay once, no subscription. We do our best to get your keys home, but we can’t promise every finder will scan.', `
+    <h2>About these terms</h2>
+    <p>These terms cover buying Keytags and using the Keytag service at keytag.club. Keytag is run by ${COMPANY.name} (company number ${COMPANY.number}), ${COMPANY.address}. Contact us at <b>${COMPANY.email}</b>.</p>
+
+    <h2>What you get</h2>
+    <ul>
+      <li>A physical tag with a unique code and QR code.</li>
+      <li>The Keytag service: when someone finds your keys and scans the tag, we pass their message to you by text and email. If they leave a number, you can reply through Keytag, and neither of you sees the other's number.</li>
+      <li>No subscription. The price you pay at checkout covers the tag and the service.</li>
+    </ul>
+
+    <h2>What we can't promise</h2>
+    <p>Keytag helps lost keys get home, but it depends on someone finding them and choosing to scan the tag. We can't guarantee your keys will be returned, or how quickly. We also rely on phone networks and email providers to deliver messages. Please keep your mobile number up to date in your account.</p>
+
+    <h2>Buying</h2>
+    <ul>
+      <li>Prices are shown at checkout and include VAT where it applies. Delivery to the UK is free.</li>
+      <li>We currently deliver to the UK and selected European countries. We don't deliver to Asia or South America.</li>
+      <li>Orders are processed by Shopify. Your contract for the purchase is with us.</li>
+    </ul>
+
+    <h2>Returns and refunds</h2>
+    <ul>
+      <li><b>Change of mind:</b> you can cancel within 14 days of receiving your order for a full refund. Return the tags unused and not set up. Email ${COMPANY.email} to start a return.</li>
+      <li><b>Faulty tags:</b> if a tag is faulty or doesn't scan, contact us and we'll replace or refund it. This doesn't affect your legal rights under the Consumer Rights Act 2015.</li>
+    </ul>
+
+    <h2>Using Keytag fairly</h2>
+    <p>Don't use Keytag to harass, threaten or spam anyone, to send anything unlawful, or to try to discover someone's personal details. We limit how many messages can be sent, and we may block numbers or close accounts that misuse the service.</p>
+
+    <h2>Your account</h2>
+    <p>Keep your email and mobile number up to date, and don't share your login links. A tag belongs to whoever set it up. You can gift a tag to someone else or remove it from your account at any time. You must be 16 or over to set up an account.</p>
+
+    <h2>Our responsibility to you</h2>
+    <p>We're responsible for loss or damage you suffer that is a foreseeable result of us breaking these terms or not using reasonable care. We're not responsible for losses we couldn't have foreseen, or for the cost of replacing lost keys, locks or vehicles. Nothing in these terms limits our liability where it would be unlawful to do so, including for death or personal injury caused by our negligence, or fraud.</p>
+
+    <h2>Changes and law</h2>
+    <p>We may update these terms. We'll change the date at the top and, for significant changes, email owners. These terms are governed by the law of England and Wales. If you live elsewhere in the UK, you can also bring proceedings in your local courts.</p>`); }
+});
+
+
+/* ---------- routing ---------- */
+const PATHS = { register:'/register', home:'/', buy:'/shop', login:'/login', dashboard:'/account', admin:'/admin', privacy:'/privacy', terms:'/terms' };
+let current = { view:'home' };
+const SCAN_VIEWS = ['scanStart','scanFound','scanSetup'];
+
+async function go(view, arg, { push = true } = {}){
+  if (view === 'account') view = session ? 'dashboard' : 'login';
+  current = { view, arg };
+  const path = view === 'enter' ? (arg === 'found' ? '/found' : '/setup')
+    : SCAN_VIEWS.includes(view) ? (typeof arg === 'string' && arg ? `/scan/${fmtCode(arg)}` : '/scan')
+    : PATHS[view];
+  if (path && location.pathname !== path) {
+    if (/^\/t\//i.test(location.pathname)) history.replaceState({ view, arg }, '', path);   // QR links: show the /scan address
+    else if (push) history.pushState({ view, arg }, '', path);
+  }
+  document.body.classList.toggle('focus', SCAN_VIEWS.includes(view) || view === 'unregFound' || view === 'yourTag');
+  const out = views[view](arg);
+  if (out instanceof Promise) app.innerHTML = '<div class="wrap"><div class="view page"><section class="card"><p class="muted">Loading…</p></section></div></div>';
+  const html = await out;
+  if (current.view !== view || current.arg !== arg) return;   // user moved on while loading
+  app.innerHTML = view === 'home'
+    ? '<div class="view home">' + html + '</div>'
+    : '<div class="wrap"><div class="view page">' + html + '</div></div>';
+  $('accountBtn').textContent = session ? 'My tags' : 'Log in';
+  window.scrollTo(0, 0);
+  bind();
+}
+
+async function scanFlow(rawCode){
+  const code = norm(rawCode);
+  if (code.length !== 6) return go('unknownTag', code);
+  let r;
+  try { r = await api(`/api/scan?code=${code}`); } catch(e){ return go('problem', e.message); }
+  if (r.status === 'unknown') return go('unknownTag', code);
+  if (r.status === 'registered') return go('scanFound', code);
+  if (r.status === 'yours') return go('yourTag', { ...r, code });
+  return go(session ? 'addTag' : 'scanSetup', code);
+}
+
+/* Register step 1: check the code, then show the details form (or the right message). */
+async function registerCode(rawCode, errId){
+  const code = norm(rawCode);
+  if (code.length !== 6) { if (errId) return showErr(errId, 'Codes are 6 letters and numbers, like 7H4-Q9M.'); return go('register'); }
+  let r;
+  try { r = await api(`/api/scan?code=${code}`); } catch(e){ if (errId) return showErr(errId, e.message); return go('problem', e.message); }
+  if (r.status === 'unknown') { if (errId) return showErr(errId, 'Code not found. Check the code on the back of your tag.'); return go('unknownTag', code); }
+  if (r.status === 'yours') return go('yourTag', r);
+  if (r.status === 'registered') return go('taken', code);
+  if (session) return go('addTag', code);
+  return go('register', code);
+}
+
+async function route({ push = false } = {}){
+  const p = location.pathname;
+  const t = p.match(/^\/t\/([A-Za-z0-9-]{6,7})(?:\/[A-Za-z0-9]*)?\/?$/i);
+  if (t) return scanFlow(t[1]);
+  const sc = p.match(/^\/scan(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
+  if (sc) return sc[1] ? scanFlow(sc[1]) : go('scanStart', null, { push });
+  const reg = p.match(/^\/register(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
+  if (reg) return reg[1] ? registerCode(reg[1]) : go('register', null, { push });
+  if (/^\/found\/?$/i.test(p)) return go('enter', 'found', { push });
+  if (/^\/setup\/?$/i.test(p)) return go('register', null, { push });
+  if (/^\/shop\/?$/i.test(p)) return go('buy', null, { push });
+  if (/^\/login\/?$/i.test(p)) return go('login', null, { push });
+  if (/^\/account\/?$/i.test(p)) return go('account', null, { push });
+  if (/^\/admin\/?$/i.test(p)) return go('admin', null, { push });
+  if (/^\/privacy\/?$/i.test(p)) return go('privacy', null, { push });
+  if (/^\/terms\/?$/i.test(p)) return go('terms', null, { push });
+  return go('home', null, { push });
+}
+
+/* Logged in: add a tag to your account. */
+async function claimFlow(code, extra){
+  code = norm(code);
+  if (!session) return go('login');
+  go('claiming');
+  try {
+    const r = await api('/api/claim', { method:'POST', body:{ code, ...(extra||{}) } });
+    if (r.needDetails) { state.pending = { code, label: extra?.label }; return go('needDetails'); }
+    state.flash = r.already ? `${fmtCode(code)} is already on your account.` : `${fmtCode(code)} is added. Tap Test to check it.`;
+    history.replaceState({}, '', '/account');
+    go('dashboard', null, { push:false });
+  } catch(e){ go('problem', e.message); }
+}
+
+async function sendLink(email, redirectPath, data, createUser){
+  const { error } = await sb.auth.signInWithOtp({ email, options: { emailRedirectTo: site() + redirectPath, data, shouldCreateUser: createUser } });
+  if (error) {
+    if (/signups not allowed|user not found/i.test(error.message)) throw new Error('No account uses that email. New Keytag? Register it first.');
+    if (/rate|seconds/i.test(error.message)) throw new Error('Please wait a minute before asking for another link.');
+    throw new Error(error.message);
+  }
+}
+
+/* ---------- events ---------- */
+function bind(){
+  $('codeForm')?.addEventListener('submit', e=>{ e.preventDefault();
+    const code = norm($('codeIn').value);
+    if (code.length !== 6) return showErr('codeErr','Codes are 6 letters and numbers, like 7H4-Q9M.');
+    scanFlow(code); });
+
+  $('regCode')?.addEventListener('submit', async e=>{ e.preventDefault();
+    await busy(e.submitter, 'Checking…', () => registerCode($('rCode').value, 'rCodeErr')); });
+
+  $('signupForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const btn = e.target.querySelector('button'); await busy(btn, 'Signing up…', async ()=>{
+      try { await api('/api/signup', { method:'POST', body:{ email: $('suEmail').value } }); $('suOk').hidden = false; btn.hidden = true; }
+      catch(err){ $('suOk').hidden = false; $('suOk').textContent = err.message; } }); });
+
+  $('regForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const code = e.target.dataset.code, email = $('rEmail').value.trim(), phone = $('rPhone').value.trim(), label = $('rLabel').value.trim();
+    if (!looksLikeMobile(phone)) return showErr('regErr','Enter a mobile number we can text, like 07700 900123.');
+    await busy(e.submitter, 'Saving…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ code, email, phone, label } });
+            state.verify = { ...r, code, label }; go('verify'); }
+      catch(err){ if (err.status === 409) return go('taken', code); showErr('regErr', err.message); } }); });
+
+  $('verifyForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const v = state.verify;
+    await busy(e.submitter, 'Checking…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ id:v.id, emailCode:$('vEmail').value, phoneCode:$('vPhone')?.value } }); state.verify = null; go('registered', r); }
+      catch(err){ if (err.status === 409) return go('taken', v.code); showErr('verifyErr', err.message); } }); });
+
+  $('resendCodes')?.addEventListener('click', async e=>{ const v = state.verify;
+    await busy(e.currentTarget, 'Sending…', async ()=>{
+      try { const r = await api('/api/register', { method:'POST', body:{ code:v.code, email:v.email, phone:v.phone, label:v.label } });
+            state.verify = { ...v, ...r }; $('resentCodes').hidden = false; showErr('verifyErr',''); }
+      catch(err){ showErr('verifyErr', err.message); } }); });
+
+  $('phoneCodeForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    await busy(e.submitter, 'Checking…', async ()=>{
+      try { await api('/api/me', { method:'PATCH', body:{ id:state.verify.id, phoneCode:$('pcCode').value } }); state.verify = null; state.flash = 'Number confirmed and saved.'; go('dashboard'); }
+      catch(err){ showErr('pcErr', err.message); } }); });
+
+  $('takenForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const email = $('tEmail').value.trim();
+    await busy(e.submitter, 'Sending…', async ()=>{
+      try { await sendLink(email, '/account', undefined, false); } catch(err){ if (/wait a minute/.test(err.message)) { $('takenMsg').textContent = err.message; } }
+      $('takenMsg').hidden = false; }); });   // same message either way, so nobody can test whose email it is
+
+  $('loginForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const email = $('lEmail').value.trim();
+    await busy(e.submitter, 'Sending…', async ()=>{
+      try { await sendLink(email, '/account', undefined, false); state.pending = { email, redirect:'/account' }; go('linkSent'); }
+      catch(err){ showErr('loginErr', err.message); } }); });
+
+  $('resend')?.addEventListener('click', async ()=>{ const p = state.pending;
+    try { await sendLink(p.email, p.redirect || '/account', undefined, false); $('resent').hidden = false; showErr('resendErr',''); }
+    catch(err){ showErr('resendErr', err.message); } });
+
+  $('detailsNeeded')?.addEventListener('submit', e=>{ e.preventDefault();
+    const phone = $('nPhone').value.trim();
+    if (!looksLikeMobile(phone)) return showErr('needErr','Enter a mobile number we can text, like 07700 900123.');
+    claimFlow(state.pending.code, { phone, label: state.pending.label }); });
+
+  $('addOne')?.addEventListener('submit', e=>{ e.preventDefault(); claimFlow(e.target.dataset.code, { label: $('aLabel').value.trim() }); });
+
+  $('renameForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const code = e.target.dataset.code;
+    await busy(e.submitter, 'Saving…', async ()=>{
+      try { await api('/api/tag', { method:'POST', body:{ action:'label', code, label:$('nLabel').value } }); state.flash = 'Saved.'; go('dashboard'); }
+      catch(err){ showErr('renameErr', err.message); } }); });
+
+  /* finder */
+  document.querySelectorAll('[data-chip]').forEach(ch=>ch.addEventListener('click',()=>{
+    document.querySelectorAll('[data-chip]').forEach(c=>c.setAttribute('aria-pressed','false')); ch.setAttribute('aria-pressed','true');
+    const m=$('fMsg'); m.value=ch.dataset.chip; m.dispatchEvent(new Event('input'));
+    const keep=!!ch.dataset.keep, a=$('fAllow');
+    if(keep){ a.checked=true; a.disabled=true; } else { a.disabled=false; }
+    syncContact(keep);
+    if(!keep){ m.focus(); m.setSelectionRange(m.value.length,m.value.length); } else $('fPhone').focus(); }));
+  function syncContact(locked){ const a=$('fAllow'); if(!a) return; const on=a.checked;
+    $('phoneWrap').hidden=!on; $('fPhone').required=on;
+    $('allowHint').textContent = locked ? 'Needed so the owner can arrange to get their keys back. They never see your number.' : 'They can text you back through Keytag. They never see your number.';
+    a.closest('.contact-opt').classList.toggle('on', on); }
+  $('fAllow')?.addEventListener('change', e=>{ syncContact(false); if(e.target.checked) $('fPhone').focus(); });
+  $('fMsg')?.addEventListener('input', e=>{ $('fCount').textContent = e.target.value.length + ' / 160'; });
+  $('findForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const allow = $('fAllow').checked, phone = $('fPhone').value.trim();
+    if (allow && !looksLikeMobile(phone)) return showErr('findErr','Enter a mobile number we can text, like 07700 900123.');
+    await busy(e.submitter, 'Sending…', async ()=>{
+      try { const r = await api('/api/message', { method:'POST', body:{ code:e.target.dataset.code, body:$('fMsg').value, allowContact:allow, phone } }); go('sent', r.canReply); }
+      catch(err){ showErr('findErr', err.message); } }); });
+
+  /* account */
+  $('addForm')?.addEventListener('submit', e=>{ e.preventDefault();
+    const code = norm($('aCode').value);
+    if (code.length !== 6) return showErr('addErr','Codes are 6 letters and numbers, like 7H4-Q9M.');
+    claimFlow(code, { label: $('aLabel2').value.trim() }); });
+  $('detailsForm')?.addEventListener('submit', async e=>{ e.preventDefault();
+    const phone = $('dPhone').value.trim();
+    if (!looksLikeMobile(phone)) return showErr('detailsErr','Enter a mobile number we can text, like 07700 900123.');
+    await busy(e.submitter, 'Saving…', async ()=>{
+      try { const r = await api('/api/me', { method:'PATCH', body:{ name:$('dName').value, phone } });
+            if (r.needCode) { state.verify = { id:r.id, phone:r.phone }; return go('phoneCode'); }
+            $('dPhone').value = r.owner.phone; $('savedMsg').hidden=false; showErr('detailsErr',''); }
+      catch(err){ showErr('detailsErr', err.message); } }); });
+  $('giftForm')?.addEventListener('submit', async e=>{ e.preventDefault(); const code = e.target.dataset.code, name=$('gName').value.trim();
+    await busy(e.submitter, 'Sending…', async ()=>{
+      try { await api('/api/tag', { method:'POST', body:{ action:'gift', code, name, email:$('gEmail').value } }); state.flash = `Gift sent. ${name} will get an email to set up ${fmtCode(code)}.`; go('dashboard'); }
+      catch(err){ showErr('giftErr', err.message); } }); });
+  $('confirmRemove')?.addEventListener('click', async e=>{ const code = e.currentTarget.dataset.code;
+    await busy(e.currentTarget, 'Removing…', async ()=>{
+      try { await api('/api/tag', { method:'POST', body:{ action:'remove', code } }); state.flash = `${fmtCode(code)} removed from your account.`; go('dashboard'); }
+      catch(err){ showErr('removeErr', err.message); } }); });
+  $('confirmDelete')?.addEventListener('click', async e=>{
+    await busy(e.currentTarget, 'Deleting…', async ()=>{
+      try { await api('/api/me', { method:'DELETE' }); await sb.auth.signOut(); session=null; go('home'); }
+      catch(err){ showErr('delErr', err.message); } }); });
+  $('logout')?.addEventListener('click', async ()=>{ await sb.auth.signOut(); session=null; go('home'); });
+}
+
+document.addEventListener('change', e=>{ if(e.target.id==='qtyIn') setQty(parseInt(e.target.value,10)); });
+document.addEventListener('click', e=>{
+  if(!e.target.closest('.more')) document.querySelectorAll('.more[open]').forEach(d=>d.removeAttribute('open'));
+  const q = e.target.closest('[data-qty]'); if(q){ setQty(qty() + Number(q.dataset.qty)); return; }
+  if(e.target.closest('#checkout')){
+    if (CONFIG?.checkoutUrl) location.href = CONFIG.checkoutUrl.replace('{QTY}', qty());
+    else go('checkoutSoon');
+    return; }
+  const s = e.target.closest('[data-scan]'); if(s){ scanFlow(s.dataset.scan); return; }
+  const bu = e.target.closest('.burger'); if(bu){ toggleMenu(); return; }
+  const g = e.target.closest('[data-go]'); if(g){ toggleMenu(false); go(g.dataset.go, g.dataset.arg); return; }
+  if(!e.target.closest('header.site')) toggleMenu(false);
+});
+function toggleMenu(open){
+  const h = document.querySelector('header.site'); if(!h) return;
+  open = open ?? !h.classList.contains('open');
+  h.classList.toggle('open', open);
+  h.querySelector('.burger')?.setAttribute('aria-expanded', open);
+}
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
+window.addEventListener('popstate', ()=>route());
+
+/* ---------- start ---------- */
+(async function boot(){
+  try {
+    CONFIG = await fetch('/api/config').then(r=>{ if(!r.ok) throw new Error(); return r.json(); });
+    sb = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey, { auth: { flowType:'implicit', detectSessionInUrl:true, persistSession:true } });
+    const { data } = await sb.auth.getSession();
+    session = data.session;
+    sb.auth.onAuthStateChange((_e, s)=>{ session = s; const b=$('accountBtn'); if(b) b.textContent = s ? 'My tags' : 'Log in'; });
+    if (location.hash.includes('access_token')) history.replaceState({}, '', location.pathname + location.search);
+  } catch(e){ console.error('Could not load settings', e); }
+  route();
+})();
+
+</script>
+</body>
+</html>
