@@ -146,3 +146,11 @@ language sql security definer as $$
   delete from public.rate_limits   where at               < now() - interval '1 day';
   delete from public.verifications where created_at       < now() - interval '1 day';
 $$;
+
+-- Back-in-stock alerts: people who asked to be emailed when Keytags are available again.
+create table if not exists public.restock_requests (
+  email       text primary key,
+  created_at  timestamptz not null default now(),
+  notified_at timestamptz
+);
+alter table public.restock_requests enable row level security;

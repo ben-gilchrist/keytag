@@ -11,7 +11,7 @@ export default handler(['GET'], async (req, res) => {
 
   const weekAgo = new Date(Date.now() - 7 * 86400 * 1000).toISOString();
   const count = q => q.then(r => r.count || 0);
-  const [tagsTotal, tagsActive, scansWeek, convsWeek, { data: scans }, { data: convs }, { data: tags }] = await Promise.all([
+  const [tagsTotal, tagsActive, scansWeek, convsWeek, { data: scans }, { data: convs }, { data: tags }, { data: restock }] = await Promise.all([
     count(db().from('tags').select('code', { count: 'exact', head: true })),
     count(db().from('tags').select('code', { count: 'exact', head: true }).not('owner_id', 'is', null)),
     count(db().from('scans').select('id', { count: 'exact', head: true }).gte('scanned_at', weekAgo)),
@@ -19,7 +19,8 @@ export default handler(['GET'], async (req, res) => {
     db().from('scans').select('tag_code, kind, scanned_at').order('scanned_at', { ascending: false }).limit(50),
     db().from('conversations').select('id, tag_code, finder_phone, created_at, owners ( name ), messages ( direction, body, created_at )')
       .order('created_at', { ascending: false }).limit(20),
-    db().from('tags').select('code, batch, activated_at, gift_to_email, owners ( name )').order('created_at', { ascending: false }).limit(200)
+    db().from('tags').select('code, batch, activated_at, gift_to_email, owners ( name )').order('created_at', { ascending: false }).limit(200),
+    db().from('restock_requests').select('email, created_at, notified_at').order('created_at', { ascending: true }).limit(2000)
   ]);
 
   json(res, 200, {
@@ -29,6 +30,7 @@ export default handler(['GET'], async (req, res) => {
       code: c.tag_code, owner: c.owners?.name || null, canReply: !!c.finder_phone, at: c.created_at,
       messages: (c.messages || []).sort((a, b) => a.created_at.localeCompare(b.created_at))
     })),
+    restock: (restock || []).filter(r => !r.notified_at).map(r => ({ email: r.email, at: r.created_at })),
     tags: (tags || []).map(t => ({ code: t.code, batch: t.batch, owner: t.owners?.name || null, giftPending: !!t.gift_to_email, activatedAt: t.activated_at }))
   });
 });

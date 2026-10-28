@@ -598,6 +598,14 @@ body.focus header.site nav, body.focus .burger{display:none!important}
 .scan-buy .btn{align-self:flex-start}
 @media (max-width:899px){.scan-head{padding:22px}.scan-doors{grid-template-columns:1fr}}
 
+/* sold out: back-in-stock email box in place of the calculator */
+.calc.sold-out{align-items:center}
+.sold-copy{flex:1 1 260px}
+.restock-form{flex:1 1 320px;display:flex;flex-wrap:wrap;gap:8px}
+.restock-form input{flex:1 1 180px;min-width:0;background:#ffffff;color:#141414;border:0}
+.restock-form .calc-btn{flex:0 0 auto;padding-inline:28px}
+.rs-msg{flex:1 1 100%;margin:0;color:var(--on-panel)}
+
 </style>
 </head>
 <body>
@@ -636,6 +644,7 @@ const db = { qty: 1 };            // quantity picker (name kept from the prototy
 function save(){}                 // pricing helpers call save(); nothing to persist here
 const state = { flash: null, pending: null };
 let CONFIG = null, sb = null, session = null;
+let STOCK = null;                 // true / false from Shopify via /api/stock; null = unknown (show Checkout)
 
 const TIERS = [{min:1, each:14},{min:2, each:12},{min:5, each:10}];
 const tierLabel = i => { const t=TIERS[i], nx=TIERS[i+1]; return !nx ? `${t.min}+ tags` : (nx.min-1===t.min ? `${t.min} tag${t.min>1?'s':''}` : `${t.min}–${nx.min-1} tags`); };
@@ -651,7 +660,7 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
       <span class="pill${save?' on':''}">${save ? `Save £${save} a tag` : 'Full price'}</span>
     </div>`; }).join('')}
   </div>
-  <div class="calc">
+  ${(typeof STOCK !== 'undefined' && STOCK === false) ? soldOutBox() : `<div class="calc">
     <div class="stack" style="gap:8px">
       <span class="label">How many?</span>
       <div class="stepper" role="group" aria-label="Quantity">
@@ -667,7 +676,21 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
     </div>
     <div class="free-del"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v9H2zM13 9h4l3 3v3h-7z"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span><b>Free UK delivery</b><span>On every order, any size</span></span></div>
     <button class="btn calc-btn" id="checkout">Checkout</button>
-  </div></div>`; };
+  </div>`}</div>`; };
+/* shown instead of the calculator when Shopify says the Keytag is sold out */
+const soldOutBox = () => `<div class="calc sold-out">
+    <div class="stack sold-copy" style="gap:6px">
+      <span class="label">Sold out</span>
+      <span class="total">Back soon</span>
+      <span class="small muted">Leave your email and we’ll tell you as soon as Keytags are back in stock.</span>
+    </div>
+    <form id="restockForm" class="restock-form">
+      <label for="rsEmail" class="sr">Email</label>
+      <input id="rsEmail" type="email" required autocomplete="email" placeholder="Your email">
+      <button class="btn calc-btn" type="submit">Notify me</button>
+      <p id="rsMsg" class="small rs-msg" hidden></p>
+    </form>
+  </div>`;
 /* change quantity without re-rendering the page (no entrance animation, no jump) */
 function setQty(n){
   db.qty = Math.max(1, Math.min(99, n || 1)); save();
@@ -1209,6 +1232,9 @@ const views = {
     <section class="card"><h2>Finds</h2>
       ${d.conversations.length ? d.conversations.map(c=>`<div class="msg"><div class="row split"><span class="label">${esc(c.code)} · ${esc(c.owner||'No owner')} · ${esc(when(c.at))}</span>${c.canReply?'<span class="pill on">Finder left number</span>':''}</div>${c.messages.map(m=>`<p class="small">${m.direction==='owner_to_finder'?'Owner':'Finder'}: “${esc(m.body)}”</p>`).join('')}</div>`).join('') : '<p class="muted">No finds yet.</p>'}
     </section>
+    <section class="card"><h2>Back-in-stock list</h2>
+      ${d.restock?.length ? `<p class="muted small">${d.restock.length} ${d.restock.length===1?'person is':'people are'} waiting to hear when Keytags are back.</p><textarea readonly rows="4" class="code" style="width:100%" onclick="this.select()">${esc(d.restock.map(r=>r.email).join(', '))}</textarea>` : '<p class="muted">Nobody waiting.</p>'}
+    </section>
     <section class="card"><h2>Tags</h2>
       <div class="tablebox"><table><tr><th>Code</th><th>Batch</th><th>Owner</th><th>Status</th></tr>${d.tags.map(t=>`<tr><td class="code">${esc(t.code)}</td><td>${esc(t.batch||'')}</td><td>${esc(t.owner||'—')}</td><td>${t.owner?'<span class="pill on">Active</span>':t.giftPending?'<span class="pill warn">Gift sent</span>':'<span class="pill">Not set up</span>'}</td></tr>`).join('')}</table></div>
     </section>`; }
@@ -1249,7 +1275,7 @@ Object.assign(views, {
     <ul>
       <li><b>Scans</b>: when a tag is scanned or its code is typed in, we record the tag and the time. We don't record your location.</li>
       <li><b>Abuse protection</b>: to stop people trying codes at random, we keep a scrambled (one-way) version of your IP address for 24 hours, then delete it.</li>
-      <li><b>Launch list</b>: your email, if you sign up for news.</li>
+      <li><b>Email lists</b>: your email, if you sign up for news or ask us to tell you when Keytags are back in stock.</li>
       <li><b>Orders</b> are handled by our shop provider, Shopify, which processes payment and delivery details under its own privacy policy. We never see your card details.</li>
     </ul>
     <p>We don't use advertising cookies or tracking on this site. We store your login in your browser so you stay signed in. This is essential for the site to work.</p>
@@ -1260,7 +1286,7 @@ Object.assign(views, {
       <tr><td>Owner details</td><td>To run the service you signed up for: alerting you when your keys are found</td><td>Contract</td></tr>
       <tr><td>Finder message and number</td><td>To get the keys back to their owner and relay replies</td><td>Legitimate interests</td></tr>
       <tr><td>Scan records</td><td>To run the service, prevent misuse and improve it</td><td>Legitimate interests</td></tr>
-      <tr><td>Launch list email</td><td>To send you Keytag news</td><td>Consent (unsubscribe any time)</td></tr>
+      <tr><td>Email lists</td><td>To send you Keytag news, or tell you when Keytags are back in stock</td><td>Consent (unsubscribe any time)</td></tr>
     </table>
     <p>We never sell your information or use it for anyone else's marketing.</p>
 
@@ -1278,7 +1304,7 @@ Object.assign(views, {
       <li><b>Account details</b>: until you delete your account.</li>
       <li><b>Finder messages and finder numbers</b>: 90 days, then deleted automatically.</li>
       <li><b>Scan records</b>: 12 months.</li>
-      <li><b>Launch list</b>: until you unsubscribe.</li>
+      <li><b>Email lists</b>: until you unsubscribe. Back-in-stock requests are kept only until we've told you Keytags are back.</li>
     </ul>
 
     <h2>Your rights</h2>
@@ -1562,6 +1588,14 @@ function toggleMenu(open){
   h.querySelector('.burger')?.setAttribute('aria-expanded', open);
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
+document.addEventListener('submit', async e=>{
+  if (e.target.id !== 'restockForm') return;
+  e.preventDefault();
+  const msg = $('rsMsg'), btn = e.target.querySelector('button');
+  await busy(btn, 'Saving…', async ()=>{
+    try { await api('/api/signup', { method:'POST', body:{ email: $('rsEmail').value, list:'restock' } });
+          msg.textContent = 'Thanks. We’ll email you when they’re back.'; msg.hidden = false; $('rsEmail').hidden = true; btn.hidden = true; }
+    catch(err){ msg.textContent = err.message; msg.hidden = false; } }); });
 window.addEventListener('popstate', ()=>route());
 
 /* ---------- start ---------- */
@@ -1575,6 +1609,10 @@ window.addEventListener('popstate', ()=>route());
     if (location.hash.includes('access_token')) history.replaceState({}, '', location.pathname + location.search);
   } catch(e){ console.error('Could not load settings', e); }
   route();
+  try {
+    STOCK = (await fetch('/api/stock').then(r=>r.json())).inStock;
+    if (STOCK === false && document.querySelector('.pricing')) setQty(qty());
+  } catch(e) {}
 })();
 
 </script>

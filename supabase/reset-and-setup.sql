@@ -10,6 +10,7 @@ drop table if exists public.owners        cascade;
 drop table if exists public.signups       cascade;
 drop table if exists public.rate_limits   cascade;
 drop table if exists public.verifications cascade;
+drop table if exists public.restock_requests cascade;
 drop function if exists public.purge_old_data();
 drop function if exists public.user_id_by_email(text);
 
@@ -162,6 +163,14 @@ language sql security definer as $$
   delete from public.rate_limits   where at               < now() - interval '1 day';
   delete from public.verifications where created_at       < now() - interval '1 day';
 $$;
+
+-- Back-in-stock alerts: people who asked to be emailed when Keytags are available again.
+create table if not exists public.restock_requests (
+  email       text primary key,
+  created_at  timestamptz not null default now(),
+  notified_at timestamptz
+);
+alter table public.restock_requests enable row level security;
 
 -- ===== Sample tags for testing (delete before launch: delete from public.tags where batch in ('sample','test');) =====
 insert into public.tags (code, batch) values

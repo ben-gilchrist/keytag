@@ -33,7 +33,7 @@ Object.assign(views, {
     <ul>
       <li><b>Scans</b>: when a tag is scanned or its code is typed in, we record the tag and the time. We don't record your location.</li>
       <li><b>Abuse protection</b>: to stop people trying codes at random, we keep a scrambled (one-way) version of your IP address for 24 hours, then delete it.</li>
-      <li><b>Launch list</b>: your email, if you sign up for news.</li>
+      <li><b>Email lists</b>: your email, if you sign up for news or ask us to tell you when Keytags are back in stock.</li>
       <li><b>Orders</b> are handled by our shop provider, Shopify, which processes payment and delivery details under its own privacy policy. We never see your card details.</li>
     </ul>
     <p>We don't use advertising cookies or tracking on this site. We store your login in your browser so you stay signed in. This is essential for the site to work.</p>
@@ -44,7 +44,7 @@ Object.assign(views, {
       <tr><td>Owner details</td><td>To run the service you signed up for: alerting you when your keys are found</td><td>Contract</td></tr>
       <tr><td>Finder message and number</td><td>To get the keys back to their owner and relay replies</td><td>Legitimate interests</td></tr>
       <tr><td>Scan records</td><td>To run the service, prevent misuse and improve it</td><td>Legitimate interests</td></tr>
-      <tr><td>Launch list email</td><td>To send you Keytag news</td><td>Consent (unsubscribe any time)</td></tr>
+      <tr><td>Email lists</td><td>To send you Keytag news, or tell you when Keytags are back in stock</td><td>Consent (unsubscribe any time)</td></tr>
     </table>
     <p>We never sell your information or use it for anyone else's marketing.</p>
 
@@ -62,7 +62,7 @@ Object.assign(views, {
       <li><b>Account details</b>: until you delete your account.</li>
       <li><b>Finder messages and finder numbers</b>: 90 days, then deleted automatically.</li>
       <li><b>Scan records</b>: 12 months.</li>
-      <li><b>Launch list</b>: until you unsubscribe.</li>
+      <li><b>Email lists</b>: until you unsubscribe. Back-in-stock requests are kept only until we've told you Keytags are back.</li>
     </ul>
 
     <h2>Your rights</h2>

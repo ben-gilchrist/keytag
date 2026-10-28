@@ -24,14 +24,16 @@ const D = fakeDb({
 });
 const users = D.users; users['u-sam'] = { id: 'u-sam', email: 'sam@example.com', user_metadata: {} };
 const texts = [], emails = [];
-setServices({
+const SVC = {
   db: D,
+  inStock: null,
   currentUser: async req => { const t = (req.headers.authorization || '').replace('Bearer ', ''); return users[t] || null; },
   sendSms: async (to, body) => { texts.push({ to, body }); },
   sendEmail: async m => { emails.push(m); },
   validTwilioRequest: () => true,
   textsEnabled: true
-});
+};
+setServices(SVC);
 
 const handlers = {};
 for (const f of fs.readdirSync(new URL('../api/', import.meta.url))) handlers[f.replace('.js', '')] = (await import(`../api/${f}`)).default;
@@ -181,6 +183,16 @@ await p.evaluate(() => localStorage.setItem('fake_session', JSON.stringify({ acc
 users['u-ben'] = { id: 'u-ben', email: 'ben@keytag.club', user_metadata: {} };
 await p.goto('http://localhost:4321/admin'); await p.waitForSelector('text=Activity');
 check(!(await p.content()).includes('900999'), 'admin page never shows finder numbers');
+
+// Sold out: the shop shows a back-in-stock email box instead of Checkout
+SVC.inStock = false;
+await p.goto('http://localhost:4321/shop');
+await p.waitForSelector('#restockForm');
+check(!(await p.$('#checkout')), 'sold out hides Checkout');
+await p.fill('#rsEmail', 'waiting@example.com'); await p.click('#restockForm button');
+await p.waitForSelector('#rsMsg:not([hidden])');
+check(D.tables.restock_requests.some(r => r.email === 'waiting@example.com'), 'sold out: back-in-stock email saved');
+SVC.inStock = null;
 
 check(errors.length === 0, 'no script errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
 await b.close(); server.close();

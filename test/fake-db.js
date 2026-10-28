@@ -6,7 +6,7 @@ const RELATIONS = {
   conversations: { owners: { table: 'owners', local: 'owner_id', foreign: 'id', many: false },
                    messages: { table: 'messages', local: 'id', foreign: 'conversation_id', many: true } }
 };
-const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email', rate_limits: 'id', verifications: 'id' };
+const PK = { owners: 'id', tags: 'code', scans: 'id', conversations: 'id', messages: 'id', signups: 'email', restock_requests: 'email', rate_limits: 'id', verifications: 'id' };
 
 function parseSelect(s) {
   const fields = [], rels = [];
@@ -17,7 +17,7 @@ function parseSelect(s) {
 }
 
 export function fakeDb(seed = {}) {
-  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], rate_limits: [], verifications: [], ...structuredClone(seed) };
+  const tables = { owners: [], tags: [], scans: [], conversations: [], messages: [], signups: [], restock_requests: [], rate_limits: [], verifications: [], ...structuredClone(seed) };
   let seq = 1;
   const users = {};
 

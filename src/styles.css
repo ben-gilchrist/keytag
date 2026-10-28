@@ -581,3 +581,11 @@ body.focus header.site nav, body.focus .burger{display:none!important}
 .scan-prices .mini{width:22px;height:22px;margin-left:-6px}
 .scan-buy .btn{align-self:flex-start}
 @media (max-width:899px){.scan-head{padding:22px}.scan-doors{grid-template-columns:1fr}}
+
+/* sold out: back-in-stock email box in place of the calculator */
+.calc.sold-out{align-items:center}
+.sold-copy{flex:1 1 260px}
+.restock-form{flex:1 1 320px;display:flex;flex-wrap:wrap;gap:8px}
+.restock-form input{flex:1 1 180px;min-width:0;background:#ffffff;color:#141414;border:0}
+.restock-form .calc-btn{flex:0 0 auto;padding-inline:28px}
+.rs-msg{flex:1 1 100%;margin:0;color:var(--on-panel)}

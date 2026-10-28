@@ -6,6 +6,7 @@ const db = { qty: 1 };            // quantity picker (name kept from the prototy
 function save(){}                 // pricing helpers call save(); nothing to persist here
 const state = { flash: null, pending: null };
 let CONFIG = null, sb = null, session = null;
+let STOCK = null;                 // true / false from Shopify via /api/stock; null = unknown (show Checkout)
 
 /*__HELPERS__*/
 
@@ -495,6 +496,9 @@ const views = {
     <section class="card"><h2>Finds</h2>
       ${d.conversations.length ? d.conversations.map(c=>`<div class="msg"><div class="row split"><span class="label">${esc(c.code)} · ${esc(c.owner||'No owner')} · ${esc(when(c.at))}</span>${c.canReply?'<span class="pill on">Finder left number</span>':''}</div>${c.messages.map(m=>`<p class="small">${m.direction==='owner_to_finder'?'Owner':'Finder'}: “${esc(m.body)}”</p>`).join('')}</div>`).join('') : '<p class="muted">No finds yet.</p>'}
     </section>
+    <section class="card"><h2>Back-in-stock list</h2>
+      ${d.restock?.length ? `<p class="muted small">${d.restock.length} ${d.restock.length===1?'person is':'people are'} waiting to hear when Keytags are back.</p><textarea readonly rows="4" class="code" style="width:100%" onclick="this.select()">${esc(d.restock.map(r=>r.email).join(', '))}</textarea>` : '<p class="muted">Nobody waiting.</p>'}
+    </section>
     <section class="card"><h2>Tags</h2>
       <div class="tablebox"><table><tr><th>Code</th><th>Batch</th><th>Owner</th><th>Status</th></tr>${d.tags.map(t=>`<tr><td class="code">${esc(t.code)}</td><td>${esc(t.batch||'')}</td><td>${esc(t.owner||'—')}</td><td>${t.owner?'<span class="pill on">Active</span>':t.giftPending?'<span class="pill warn">Gift sent</span>':'<span class="pill">Not set up</span>'}</td></tr>`).join('')}</table></div>
     </section>`; }
@@ -732,6 +736,14 @@ function toggleMenu(open){
   h.querySelector('.burger')?.setAttribute('aria-expanded', open);
 }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') toggleMenu(false); });
+document.addEventListener('submit', async e=>{
+  if (e.target.id !== 'restockForm') return;
+  e.preventDefault();
+  const msg = $('rsMsg'), btn = e.target.querySelector('button');
+  await busy(btn, 'Saving…', async ()=>{
+    try { await api('/api/signup', { method:'POST', body:{ email: $('rsEmail').value, list:'restock' } });
+          msg.textContent = 'Thanks. We’ll email you when they’re back.'; msg.hidden = false; $('rsEmail').hidden = true; btn.hidden = true; }
+    catch(err){ msg.textContent = err.message; msg.hidden = false; } }); });
 window.addEventListener('popstate', ()=>route());
 
 /* ---------- start ---------- */
@@ -745,4 +757,8 @@ window.addEventListener('popstate', ()=>route());
     if (location.hash.includes('access_token')) history.replaceState({}, '', location.pathname + location.search);
   } catch(e){ console.error('Could not load settings', e); }
   route();
+  try {
+    STOCK = (await fetch('/api/stock').then(r=>r.json())).inStock;
+    if (STOCK === false && document.querySelector('.pricing')) setQty(qty());
+  } catch(e) {}
 })();

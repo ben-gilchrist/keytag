@@ -287,6 +287,9 @@ test('signup list', async () => {
   assert.equal((await call(signup, { method: 'POST', body: { email: 'A@b.com' } })).status, 200);
   await call(signup, { method: 'POST', body: { email: 'a@b.com' } });
   assert.equal(D.tables.signups.length, 1);
+  await call(signup, { method: 'POST', body: { email: 'w@b.com', list: 'restock' } });
+  assert.equal(D.tables.restock_requests.length, 1);
+  assert.equal(D.tables.signups.length, 1);
 });
 
 test('before the Twilio number is live: email only, finder numbers ignored', async () => {

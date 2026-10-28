@@ -12,7 +12,7 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
       <span class="pill${save?' on':''}">${save ? `Save £${save} a tag` : 'Full price'}</span>
     </div>`; }).join('')}
   </div>
-  <div class="calc">
+  ${(typeof STOCK !== 'undefined' && STOCK === false) ? soldOutBox() : `<div class="calc">
     <div class="stack" style="gap:8px">
       <span class="label">How many?</span>
       <div class="stepper" role="group" aria-label="Quantity">
@@ -28,7 +28,21 @@ const pricing = n => { const nt = TIERS.find(t=>t.min>n); return `<div class="pr
     </div>
     <div class="free-del"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 6h11v9H2zM13 9h4l3 3v3h-7z"/><circle cx="6" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg><span><b>Free UK delivery</b><span>On every order, any size</span></span></div>
     <button class="btn calc-btn" id="checkout">Checkout</button>
-  </div></div>`; };
+  </div>`}</div>`; };
+/* shown instead of the calculator when Shopify says the Keytag is sold out */
+const soldOutBox = () => `<div class="calc sold-out">
+    <div class="stack sold-copy" style="gap:6px">
+      <span class="label">Sold out</span>
+      <span class="total">Back soon</span>
+      <span class="small muted">Leave your email and we’ll tell you as soon as Keytags are back in stock.</span>
+    </div>
+    <form id="restockForm" class="restock-form">
+      <label for="rsEmail" class="sr">Email</label>
+      <input id="rsEmail" type="email" required autocomplete="email" placeholder="Your email">
+      <button class="btn calc-btn" type="submit">Notify me</button>
+      <p id="rsMsg" class="small rs-msg" hidden></p>
+    </form>
+  </div>`;
 /* change quantity without re-rendering the page (no entrance animation, no jump) */
 function setQty(n){
   db.qty = Math.max(1, Math.min(99, n || 1)); save();
