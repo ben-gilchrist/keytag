@@ -5,12 +5,14 @@
 //   npm run codes -- --count 500 --batch 001 --insert     (also adds them to the database)
 //
 // Writes to out/batch-001/:
-//   codes.csv      batch, serial, code, qr_url             → send to the manufacturer
-//   qr/CODE.svg    one vector QR per tag                    → send to the manufacturer
-//   import.sql     the same tags as SQL                      → or paste into Supabase SQL editor
+//   codes.csv          batch, serial, code, code_printed      → send to the manufacturer
+//   keytag-qr.svg      the one QR printed on every tag         → send to the manufacturer
+//   import.sql         the same tags as SQL                    → or paste into Supabase SQL editor
 //
-// The QR link is all capitals (HTTPS://KEYTAG.CLUB/T/CODE). Capitals let the QR use its
-// compact mode, so the code is less dense and scans better when small or scratched.
+// Every tag carries the same QR, linking to HTTPS://KEYTAG.CLUB/SCAN. The person scanning
+// then types the 6-character code printed on that tag. Capitals let the QR use its compact
+// mode, so it's less dense and scans better when small or scratched.
+// Add --unique-qr to give each tag its own QR (HTTPS://KEYTAG.CLUB/T/CODE) instead.
 
 import fs from 'node:fs';
 import path from 'node:path';
@@ -27,7 +29,7 @@ const count = Number(args.count || 0);
 const batch = String(args.batch || '').padStart(3, '0');
 const domain = String(args.domain || 'KEYTAG.CLUB').toUpperCase();
 if (!count || count < 1 || count > 100000 || !args.batch) {
-  console.error('Usage: npm run codes -- --count 500 --batch 001 [--insert] [--domain KEYTAG.CLUB]');
+  console.error('Usage: npm run codes -- --count 500 --batch 001 [--insert] [--domain KEYTAG.CLUB] [--unique-qr]');
   process.exit(1);
 }
 
@@ -58,20 +60,24 @@ if (sb) {
   if (clashes) console.log(`Replaced ${clashes} code(s) that already existed.`);
 }
 
+const unique = !!args['unique-qr'];
 const rows = [...codes].map((code, i) => {
-  return { batch, serial: i + 1, code, url: `HTTPS://${domain}/T/${code}` };
+  return { batch, serial: i + 1, code, url: unique ? `HTTPS://${domain}/T/${code}` : `HTTPS://${domain}/SCAN` };
 });
 
 const dir = path.join('out', `batch-${batch}`);
-fs.mkdirSync(path.join(dir, 'qr'), { recursive: true });
+fs.mkdirSync(dir, { recursive: true });
+const qrOpts = { type: 'svg', errorCorrectionLevel: 'Q', margin: 1, color: { dark: '#000000', light: '#ffffff' } };
 
 fs.writeFileSync(path.join(dir, 'codes.csv'),
-  'batch,serial,code,code_printed,qr_url\n' +
-  rows.map(r => `${r.batch},${r.serial},${r.code},${r.code.slice(0, 3)}-${r.code.slice(3)},${r.url}`).join('\n') + '\n');
+  'batch,serial,code,code_printed' + (unique ? ',qr_url' : '') + '\n' +
+  rows.map(r => `${r.batch},${r.serial},${r.code},${r.code.slice(0, 3)}-${r.code.slice(3)}` + (unique ? `,${r.url}` : '')).join('\n') + '\n');
 
-for (const r of rows) {
-  const svg = await QRCode.toString(r.url, { type: 'svg', errorCorrectionLevel: 'Q', margin: 1, color: { dark: '#000000', light: '#ffffff' } });
-  fs.writeFileSync(path.join(dir, 'qr', `${r.code}.svg`), svg);
+if (unique) {
+  fs.mkdirSync(path.join(dir, 'qr'), { recursive: true });
+  for (const r of rows) fs.writeFileSync(path.join(dir, 'qr', `${r.code}.svg`), await QRCode.toString(r.url, qrOpts));
+} else {
+  fs.writeFileSync(path.join(dir, 'keytag-qr.svg'), await QRCode.toString(`HTTPS://${domain}/SCAN`, qrOpts));
 }
 
 fs.writeFileSync(path.join(dir, 'import.sql'),
@@ -86,4 +92,4 @@ if (args.insert) {
   console.log(`Added ${rows.length} tags to the database.`);
 }
 
-console.log(`Made ${rows.length} codes in ${dir}/ (codes.csv, qr/*.svg, import.sql).`);
+console.log(`Made ${rows.length} codes in ${dir}/ (codes.csv, ${unique ? 'qr/*.svg' : 'keytag-qr.svg'}, import.sql).`);

@@ -589,3 +589,7 @@ body.focus header.site nav, body.focus .burger{display:none!important}
 .restock-form input{flex:1 1 180px;min-width:0;background:#ffffff;color:#141414;border:0}
 .restock-form .calc-btn{flex:0 0 auto;padding-inline:28px}
 .rs-msg{flex:1 1 100%;margin:0;color:var(--on-panel)}
+
+/* /scan: one big, easy code box (every tag shares the same QR, so this is the front door) */
+.code-big{font-size:clamp(28px,8vw,40px)!important;letter-spacing:.14em;text-align:center;padding:18px 12px!important;font-family:"IBM Plex Mono",ui-monospace,monospace;text-transform:uppercase}
+.code-big::placeholder{opacity:.3}

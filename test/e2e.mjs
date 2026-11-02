@@ -166,10 +166,12 @@ await openMagicLink(); await p.waitForSelector('text=Your Keytags');
 check(true, 'log in again with an email link');
 
 // 8. Found keys typed code on an unregistered-but-unknown code
-await p.goto('http://localhost:4321/found');
+await p.goto('http://localhost:4321/scan');
 await p.fill('#codeIn', 'ZZZ999'); await p.click('#codeForm button[type=submit]');
-await p.waitForSelector('text=We can’t find that tag');
-check(true, 'unknown code explained');
+await p.waitForSelector('#codeErr:not([hidden])');
+check((await p.textContent('#codeErr')).includes('can’t find that code'), 'unknown code explained on the scan page');
+await p.fill('#codeIn', ''); await p.type('#codeIn', 'qk7mft');
+check((await p.inputValue('#codeIn')) === 'QK7-MFT', 'code box tidies typing into QK7-MFT');
 
 // 9. Shop: quantity and checkout (no shop connected yet)
 await p.goto('http://localhost:4321/shop');

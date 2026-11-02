@@ -74,7 +74,7 @@ const views = {
         <div class="stack hero-copy">
           <h1>The keyring that helps lost keys get home.</h1>
           <p class="lede">Lose your keys. Get a text when someone finds them.</p>
-          <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="enter" data-arg="found">Found some keys?</button></div>
+          <div class="row" style="gap:10px"><button class="btn" data-go="buy">Shop Keytag · from £10</button><button class="btn ghost hero-ghost" data-go="scanStart">Found some keys?</button></div>
         </div>
       </div>
     </section>
@@ -108,7 +108,7 @@ const views = {
     </div>
     <div class="wrap section">
     <div class="doors">
-      <button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Found keys?</span><span class="small muted">Tell the owner</span></button>
+      <button class="door b-sky" data-go="scanStart"><span class="disp">Found keys?</span><span class="small muted">Tell the owner</span></button>
       <button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">Got a new tag? Set it up</span></button>
     </div>
     </div>
@@ -146,7 +146,7 @@ const views = {
 
   unknownTag(code){ return `
     ${head('sun',[],'We can’t find that tag',`Check the code on the back of the tag${code?` (you entered ${esc(fmtCode(code))})`:''}. It’s 6 letters and numbers.`)}
-    <div class="doors"><button class="door b-sky" data-go="enter" data-arg="found"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">New tag</span></button></div>`; },
+    <div class="doors"><button class="door b-sky" data-go="scanStart"><span class="disp">Try again</span><span class="small muted">Found keys</span></button><button class="door b-sun" data-go="register"><span class="disp">Register Keytag</span><span class="small muted">New tag</span></button></div>`; },
 
 
   /* ---------- /scan: the page people land on after scanning a tag ---------- */
@@ -154,14 +154,14 @@ const views = {
     <section class="block b-sky scan-head">
       <span class="chip-tag">Keytag</span>
       <h1>Scanned a Keytag?</h1>
-      <p class="lede">Enter the code on the back of the tag. Whether you’ve found some keys or you’re setting up your own, it takes a minute.</p>
+      <p class="lede">Type the code printed on the tag. Whether you’ve found some keys or you’re setting up your own, it takes a minute.</p>
     </section>
-    <form id="codeForm" class="card">
+    <form id="codeForm" class="card scan-code" novalidate>
       <h2 class="card-h">Code on the tag</h2>
-      <label for="codeIn"><span class="sr">Code on the tag</span><input id="codeIn" class="code" placeholder="e.g. 7H4-Q9M" autocomplete="off" autocapitalize="characters" required></label>
+      <label for="codeIn"><span class="sr">Code on the tag</span><input id="codeIn" class="code code-big" placeholder="7H4-Q9M" autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" maxlength="7" inputmode="text" enterkeyhint="go" autofocus></label>
       <p id="codeErr" class="err" hidden></p>
       <button class="btn" type="submit">Continue</button>
-      <p class="muted small">It’s 6 letters and numbers, printed under the QR code.</p>
+      <p class="muted small">It’s 6 letters and numbers, printed under the QR code on the tag.</p>
     </form>
     <div class="doors scan-doors">
       <div class="door b-sky"><span class="disp">Found some keys?</span><span class="small muted">Enter the code and tell the owner where they are. They never see your number.</span></div>
@@ -534,12 +534,13 @@ async function go(view, arg, { push = true } = {}){
   bind();
 }
 
-async function scanFlow(rawCode){
+async function scanFlow(rawCode, errId){
   const code = norm(rawCode);
-  if (code.length !== 6) return go('unknownTag', code);
+  const notFound = 'We can’t find that code. Check it against the tag: it’s 6 letters and numbers, and never uses O, 0, I or 1.';
+  if (code.length !== 6) return errId ? showErr(errId, notFound) : go('unknownTag', code);
   let r;
-  try { r = await api(`/api/scan?code=${code}`); } catch(e){ return go('problem', e.message); }
-  if (r.status === 'unknown') return go('unknownTag', code);
+  try { r = await api(`/api/scan?code=${code}`); } catch(e){ return errId ? showErr(errId, e.message) : go('problem', e.message); }
+  if (r.status === 'unknown') return errId ? showErr(errId, notFound) : go('unknownTag', code);
   if (r.status === 'registered') return go('scanFound', code);
   if (r.status === 'yours') return go('yourTag', { ...r, code });
   return go(session ? 'addTag' : 'scanSetup', code);
@@ -566,7 +567,7 @@ async function route({ push = false } = {}){
   if (sc) return sc[1] ? scanFlow(sc[1]) : go('scanStart', null, { push });
   const reg = p.match(/^\/register(?:\/([A-Za-z0-9-]{6,7}))?\/?$/i);
   if (reg) return reg[1] ? registerCode(reg[1]) : go('register', null, { push });
-  if (/^\/found\/?$/i.test(p)) return go('enter', 'found', { push });
+  if (/^\/found\/?$/i.test(p)) return go('scanStart', null, { push });
   if (/^\/setup\/?$/i.test(p)) return go('register', null, { push });
   if (/^\/shop\/?$/i.test(p)) return go('buy', null, { push });
   if (/^\/login\/?$/i.test(p)) return go('login', null, { push });
@@ -602,10 +603,14 @@ async function sendLink(email, redirectPath, data, createUser){
 
 /* ---------- events ---------- */
 function bind(){
+  $('codeIn')?.addEventListener('input', e=>{ const el=e.target, raw=norm(el.value);
+    const v = raw.length > 3 ? raw.slice(0,3)+'-'+raw.slice(3) : raw;
+    if (el.value !== v) el.value = v;
+    showErr('codeErr',''); });
   $('codeForm')?.addEventListener('submit', e=>{ e.preventDefault();
     const code = norm($('codeIn').value);
     if (code.length !== 6) return showErr('codeErr','Codes are 6 letters and numbers, like 7H4-Q9M.');
-    scanFlow(code); });
+    busy(e.submitter || e.target.querySelector('button'), 'Checking…', () => scanFlow(code, 'codeErr')); });
 
   $('regCode')?.addEventListener('submit', async e=>{ e.preventDefault();
     await busy(e.submitter, 'Checking…', () => registerCode($('rCode').value, 'rCodeErr')); });

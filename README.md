@@ -13,8 +13,8 @@ The keyring tag that helps lost keys get home. This is the live site and the ser
 
 ## How it works
 
-- **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`). The QR code links to `KEYTAG.CLUB/T/CODE`.
-- **Scan page.** `keytag.club/scan/CODE` is the page people land on after scanning. Registered tags show the finder form; new tags show the set-up form, with how it works, FAQs and buy-more below. `/scan` on its own asks for the code. It isn't linked from the homepage. The QR codes keep the shorter `/T/CODE` link (a smaller, easier-to-scan QR), which opens `/scan/CODE`.
+- **Tag codes.** Each tag has a 6-character code (e.g. `7H4-Q9M`) printed on it. Every tag carries the same QR code, linking to `KEYTAG.CLUB/SCAN`, where the person types the code. (`/t/CODE` and `/scan/CODE` links still work, e.g. for per-tag QRs made with `--unique-qr`.)
+- **Scan page.** `keytag.club/scan` is where the shared QR lands (and where "Found keys" goes). People type the code from the tag; a registered tag then shows the finder form, a new tag shows the set-up form, with how it works, FAQs and buy-more below.
 - **Registering.** Register Keytag → enter the code → email and mobile (and an optional name like "House") → Save → enter the 6-digit code we email (and text, once texts are live). Codes expire in 15 minutes, allow 5 tries and work once. Changing your mobile later also needs a texted code. Unknown codes show "Code not found". A code that's already registered offers an email link to edit details. One email can hold any number of tags: extra tags join the same account and keep the existing mobile number. A confirmation email with a log-in link is sent each time.
 - **Guessing protection.** Wrong codes are limited to 30 an hour per IP address, and registrations to 10 an hour. Only a scrambled IP is stored, for 24 hours.
 - **Finder.** Scans the tag, says where the keys are, and can choose to leave a number. The owner gets a text and an email.
@@ -74,8 +74,8 @@ npm run codes -- --count 500 --batch 001 --insert
 
 With `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` set, this checks for clashes and adds the tags to the database. It writes `out/batch-001/`:
 
-- `codes.csv`: code, printed code (`7H4-Q9M`) and QR link. Send to the manufacturer.
-- `qr/*.svg`: one vector QR per tag. Send to the manufacturer.
+- `codes.csv`: code and printed code (`7H4-Q9M`). Send to the manufacturer: one code engraved on each tag.
+- `keytag-qr.svg`: the QR printed on every tag (links to `HTTPS://KEYTAG.CLUB/SCAN`). Send to the manufacturer.
 - `import.sql`: the same tags as SQL, if you'd rather paste them into Supabase.
 
 Codes avoid look-alike characters (no 0/O, 1/I/L, 2/Z, 5/S, 8/B).
